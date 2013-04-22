@@ -1,8 +1,15 @@
 
-.PHONY: grammars
+.PHONY: grammars sync-demo
 
 help:
 	@echo "Try 'make grammars' if you want to update the grammars."
+	@echo "Or 'make sync-demo' if you want to sync to the demo server."
+
+
+DEMOHOST = gf:Sites/grasp/
+
+sync-demo:
+	rsync -v -a --delete --exclude '.*' . $(DEMOHOST)
 
 grammars: Manycats.js Mini.js Phrasebook.js
 
