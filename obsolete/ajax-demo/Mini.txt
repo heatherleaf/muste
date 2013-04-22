@@ -1,0 +1,229 @@
+abstract Mini {
+  cat Adj ;
+  cat CN ;
+  cat Cl ;
+  cat Det ;
+  cat Float ;
+  cat Int ;
+  cat NP ;
+  cat Noun ;
+  cat S ;
+  cat String ;
+  cat VP ;
+  cat Verb ;
+  fun ap : Adj -> CN -> CN ;
+  fun big : Adj ;
+  fun boy : Noun ;
+  fun child : Noun ;
+  fun cl : NP -> VP -> Cl ;
+  fun cn : Noun -> CN ;
+  fun decl : Cl -> S ;
+  fun girl : Noun ;
+  fun kiss : Verb ;
+  fun np : Det -> CN -> NP ;
+  fun pl_def : Det ;
+  fun pl_indef : Det ;
+  fun que : Cl -> S ;
+  fun see : Verb ;
+  fun sg_def : Det ;
+  fun sg_indef : Det ;
+  fun small : Adj ;
+  fun vp : Verb -> NP -> VP ;
+}
+concrete MiniSwe {
+  productions
+    C0 -> F11[]
+    C0 -> F41[]
+    C1 -> F9[C0,C16]
+    C2 -> F15[C11]
+    C3 -> F10[C0,C17]
+    C4 -> F15[C12]
+    C5 -> F14[C10,C14]
+    C6 -> F39[]
+    C7 -> F40[]
+    C8 -> F35[]
+    C9 -> F36[]
+    C10 -> F19[C6,C1]
+    C10 -> F20[C7,C1]
+    C10 -> F21[C8,C1]
+    C10 -> F22[C9,C1]
+    C10 -> F23[C6,C2]
+    C10 -> F24[C7,C2]
+    C10 -> F25[C8,C2]
+    C10 -> F26[C9,C2]
+    C10 -> F27[C6,C3]
+    C10 -> F28[C7,C3]
+    C10 -> F29[C8,C3]
+    C10 -> F30[C9,C3]
+    C10 -> F31[C6,C4]
+    C10 -> F32[C7,C4]
+    C10 -> F33[C8,C4]
+    C10 -> F34[C9,C4]
+    C11 -> F12[]
+    C11 -> F17[]
+    C12 -> F13[]
+    C13 -> F16[C5]
+    C13 -> F37[C5]
+    C14 -> F42[C15,C10]
+    C15 -> F18[]
+    C15 -> F38[]
+    C16 -> _[C1]
+    C16 -> _[C2]
+    C17 -> _[C3]
+    C17 -> _[C4]
+  lindefs
+    C0 -> F0
+    C1 -> F1
+    C5 -> F2
+    C6 -> F3
+    C10 -> F4
+    C11 -> F5
+    C13 -> F6
+    C14 -> F7
+    C15 -> F8
+  lin
+    F0 := (S0,S0,S0,S0,S0,S0,S0,S0) [lindef Adj]
+    F1 := (S0,S0,S0,S0) [lindef CN]
+    F2 := (S0,S0,S0) [lindef Cl]
+    F3 := (S0,S0,S0,S0) [lindef Det]
+    F4 := (S0) [lindef NP]
+    F5 := (S0,S0,S0,S0) [lindef Noun]
+    F6 := (S0) [lindef S]
+    F7 := (S0,S0) [lindef VP]
+    F8 := (S0) [lindef Verb]
+    F9 := (S1,S2,S3,S4) [ap]
+    F10 := (S5,S6,S7,S8) [ap]
+    F11 := (S9,S9,S10,S11,S9,S9,S9,S9) [big]
+    F12 := (S12,S13,S14,S15) [boy]
+    F13 := (S16,S17,S18,S17) [child]
+    F14 := (S19,S20,S21) [cl]
+    F15 := (S21,S22,S23,S24) [cn]
+    F16 := (S25) [decl]
+    F17 := (S26,S27,S28,S29) [girl]
+    F18 := (S30) [kiss]
+    F19 := (S1) [np]
+    F20 := (S31) [np]
+    F21 := (S32) [np]
+    F22 := (S33) [np]
+    F23 := (S34) [np]
+    F24 := (S2) [np]
+    F25 := (S35) [np]
+    F26 := (S36) [np]
+    F27 := (S5) [np]
+    F28 := (S37) [np]
+    F29 := (S38) [np]
+    F30 := (S39) [np]
+    F31 := (S40) [np]
+    F32 := (S6) [np]
+    F33 := (S41) [np]
+    F34 := (S42) [np]
+    F35 := (S43,S43,S44,S44) [pl_def]
+    F36 := (S44,S44,S44,S44) [pl_indef]
+    F37 := (S45) [que]
+    F38 := (S46) [see]
+    F39 := (S47,S48,S44,S44) [sg_def]
+    F40 := (S49,S50,S49,S50) [sg_indef]
+    F41 := (S51,S51,S52,S53,S54,S54,S54,S54) [small]
+    F42 := (S19,S21) [vp]
+  sequences
+    S0 := {0,0}
+    S1 := <0,0> <1,0>
+    S2 := <0,2> <1,1>
+    S3 := <0,4> <1,2>
+    S4 := <0,6> <1,3>
+    S5 := <0,1> <1,0>
+    S6 := <0,3> <1,1>
+    S7 := <0,5> <1,2>
+    S8 := <0,7> <1,3>
+    S9 := "stora"
+    S10 := "stor"
+    S11 := "stort"
+    S12 := "pojken"
+    S13 := "pojke"
+    S14 := "pojkarna"
+    S15 := "pojkar"
+    S16 := "barnet"
+    S17 := "barn"
+    S18 := "barnen"
+    S19 := <1,0>
+    S20 := <1,1>
+    S21 := <0,0>
+    S22 := <0,1>
+    S23 := <0,2>
+    S24 := <0,3>
+    S25 := <0,2> <0,1> <0,0> "."
+    S26 := "flickan"
+    S27 := "flicka"
+    S28 := "flickorna"
+    S29 := "flickor"
+    S30 := "kysser"
+    S31 := <0,0> <1,1>
+    S32 := <0,0> <1,2>
+    S33 := <0,0> <1,3>
+    S34 := <0,2> <1,0>
+    S35 := <0,2> <1,2>
+    S36 := <0,2> <1,3>
+    S37 := <0,1> <1,1>
+    S38 := <0,1> <1,2>
+    S39 := <0,1> <1,3>
+    S40 := <0,3> <1,0>
+    S41 := <0,3> <1,2>
+    S42 := <0,3> <1,3>
+    S43 := "de"
+    S44 :=
+    S45 := <0,1> <0,2> <0,0> "?"
+    S46 := "ser"
+    S47 := "den"
+    S48 := "det"
+    S49 := "en"
+    S50 := "ett"
+    S51 := "lilla"
+    S52 := "liten"
+    S53 := "litet"
+    S54 := "sma"
+  categories
+    Adj := range  [C0 .. C0]
+           labels ["s (Agr Sg Def) Utr"
+                   "s (Agr Sg Def) Neutr"
+                   "s (Agr Sg Indef) Utr"
+                   "s (Agr Sg Indef) Neutr"
+                   "s (Agr Pl Def) Utr"
+                   "s (Agr Pl Def) Neutr"
+                   "s (Agr Pl Indef) Utr"
+                   "s (Agr Pl Indef) Neutr"]
+    CN := range  [C1 .. C4]
+          labels ["s (Agr Sg Def)"
+                  "s (Agr Sg Indef)"
+                  "s (Agr Pl Def)"
+                  "s (Agr Pl Indef)"]
+    Cl := range  [C5 .. C5]
+          labels ["obj s"
+                  "pred s"
+                  "subj s"]
+    Det := range  [C6 .. C9]
+           labels ["s HasAdj Utr"
+                   "s HasAdj Neutr"
+                   "s NoAdj Utr"
+                   "s NoAdj Neutr"]
+    Float := range  [CFloat .. CFloat]
+             labels ["s"]
+    Int := range  [CInt .. CInt]
+           labels ["s"]
+    NP := range  [C10 .. C10]
+          labels ["s"]
+    Noun := range  [C11 .. C12]
+            labels ["s (Agr Sg Def)"
+                    "s (Agr Sg Indef)"
+                    "s (Agr Pl Def)"
+                    "s (Agr Pl Indef)"]
+    S := range  [C13 .. C13]
+         labels ["s"]
+    String := range  [CString .. CString]
+              labels ["s"]
+    VP := range  [C14 .. C14]
+          labels ["obj s"
+                  "pred s"]
+    Verb := range  [C15 .. C15]
+            labels ["s"]
+  printnames
+}

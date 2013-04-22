@@ -1,0 +1,43 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html> 
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>GRASP</title>
+  <style type="text/css">
+    body {font-family: georgia, serif; font-size: 20pt; margin: 0; padding: 0}
+    #grammars {font-family: verdana, arial, sans-serif; font-size: 50%; margin: 1em}
+    #grammars {border: 1px solid; padding: 1em; background-color: #eee}
+    .grammar {margin: 1em}
+    #sentence {margin: 4em 0}
+    #sentence {border-width: 1px; border-style: solid none; padding: 1ex; background-color: #eee}
+    .word {padding: 0}
+    .space {padding: 0em 0.4em}
+    sub {font-size: 30%}
+    #menu {display:none; list-style: none; padding: 0em 0.2em; margin: 0.2em}
+    #menu {border: 1px solid}
+    #menu {position: absolute; background-color: #ffa; border-radius: 8px}
+    a, a:visited {text-decoration: none; color: black}
+    a:hover {color: #b00}
+    .selected {background-color: #ffb}
+    #debug {font-size: 50%; background-color: #fdd; border-top: 1px solid grey}
+    #debug p {margin: 0; padding: 0}
+    /* Comment this if you want debugging information: */
+    #debug {display: none}
+  </style> 
+  <script type="text/javascript" src="jquery-1.9.1.min.js"></script>
+  <script type="text/javascript" src="GF.js"></script>
+  <script type="text/javascript" src="Mini.js"></script>
+  <script type="text/javascript" src="Manycats.js"></script>
+  <!-- <script type="text/javascript" src="Phrasebook.js"></script> -->
+  <script type="text/javascript" src="grammars.js"></script>
+  <script type="text/javascript" src="grasp.js"></script>
+</head>
+<body>
+<center>
+<div><span id="grammars"></span></div>
+<p id="sentence"></p>
+<ul id="menu"></ul>
+</center>
+<div id="debug"></div>
+</body> 
+</html>
