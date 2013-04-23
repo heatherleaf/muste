@@ -22,9 +22,9 @@ vpp : VP -> PP -> VP;
 i, you : NP;
 catt, dog, house : N;
 this, these, many, a, plind : D;
-sleep : V1;
+sleep, run : V1;
 see, hunt : V2;
-inn : P;
+inn, on, under, behind : P;
 big, small : A;
 
 }

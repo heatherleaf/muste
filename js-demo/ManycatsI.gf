@@ -44,9 +44,13 @@ many = many_Det;
 a = DetQuant IndefArt NumSg;
 plind = DetQuant IndefArt NumPl;
 sleep = sleep_V;
+run = run_V;
 see = see_V2;
 hunt = hunt_V2;
 inn = in_Prep;
+on = on_Prep;
+under = under_Prep;
+behind = behind_Prep;
 big = PositA big_A;
 small = PositA small_A;
 
