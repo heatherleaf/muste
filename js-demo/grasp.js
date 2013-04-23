@@ -3,7 +3,7 @@ var BEFORE = 'BEFORE', ON = 'ON', AFTER = 'AFTER';
 
 var Grammar;
 var Tree;
-var Lin;
+var Lins;
 var Selected;
 var Position;
 var ClickData;
@@ -37,25 +37,33 @@ function select_grammar(gram) {
 function select_tree(tree) {
     debug("TREE:", strTree(tree));
     Tree = tree;
+    Lins = {};
     Selected = null;
-    Lin = GRAMMARS[Grammar].linearise(tree);
     $('#menu').empty().hide();
-    $('#sentence').empty();
-    for (var nr = 0; nr <= Lin.length; nr++) {
-        var spaceelem = $('<a class="space" href="#">')
-            .data('nr', nr)
-            .html("&nbsp;")
-            .click(click_space)
-            .appendTo($('#sentence'));
-        if (nr < Lin.length) {
-            var wordelem = $('<a class="word" href="#">')
-                .attr('id', 'word-' + nr)
+    $('#sentences').empty();
+    var languages = Object.keys(GRAMMARS[Grammar].concretes);
+    languages.forEach(function(lang){
+        Lins[lang] = GRAMMARS[Grammar].concretes[lang].linearise(tree);
+        // debug(lang, strLin(Lins[lang]));
+        var sent = $('<p>').appendTo($('#sentences'));
+        for (var nr = 0; nr <= Lins[lang].length; nr++) {
+            var spaceelem = $('<a class="space" href="#">')
                 .data('nr', nr)
-                .text(Lin[nr].word)
-                .click(click_word)
-                .appendTo($('#sentence'));
+                .data('lang', lang)
+                .html("&nbsp;")
+                .click(click_space)
+                .appendTo(sent);
+            if (nr < Lins[lang].length) {
+                var wordelem = $('<a class="word" href="#">')
+                    .attr('id', 'word-' + nr)
+                    .data('nr', nr)
+                    .data('lang', lang)
+                    .text(Lins[lang][nr].word)
+                    .click(click_word)
+                    .appendTo(sent);
+            }
         }
-    }
+    });
 }
 
 function debug() {
@@ -70,34 +78,36 @@ function debug() {
 
 function click_word() {
     var wordnr = $(this).data('nr');
-    debug("CLICK WORD:", wordnr);
-    var menu = find_next_menu(wordnr, ON);
+    var lang = $(this).data('lang');
+    // debug("CLICK WORD:", wordnr, "/", lang);
+    var menu = find_next_menu(lang, wordnr, ON);
     show_menu($(this), menu);
 }
 
 function click_space() {
     var spacenr = $(this).data('nr');
-    debug("CLICK SPACE:", spacenr);
+    var lang = $(this).data('lang');
+    // debug("CLICK SPACE:", spacenr, "/", lang);
     var menu;
     if (spacenr > 0 && !(Selected && Position == BEFORE)) {
-        menu = find_next_menu(spacenr-1, AFTER);
+        menu = find_next_menu(lang, spacenr-1, AFTER);
     }
-    if (spacenr < Lin.length && !(Selected && Position == AFTER)) {
-        menu = find_next_menu(spacenr, BEFORE);
+    if (spacenr < Lins[lang].length && !(Selected && Position == AFTER)) {
+        menu = find_next_menu(lang, spacenr, BEFORE);
     }
     show_menu($(this), menu);
 }
 
-function find_next_menu(wordnr, position) {
+function find_next_menu(lang, wordnr, position) {
     Position = position;
-    var path = Lin[wordnr].node;
+    var path = Lins[lang][wordnr].node;
     if (!is_selected(path, position)) 
         Selected = path;
     var menu;
     // debug("@", wordnr, ":", path, "->", Selected, "/", menu);
     while (Selected && !(menu && menu.length)) {
         Selected = Selected.slice(0, -1);
-        menu = click_somewhere(wordnr, position);
+        menu = click_somewhere(lang, wordnr, position);
         // debug("F", Selected, "->", menu.length);
     }
     return menu;
@@ -132,7 +142,8 @@ function show_menu(clicked, menu) {
 function select_focus() {
     $('.word').each(function() {
         var nr = $(this).data('nr');
-        var wordpath = Lin[nr].node;
+        var lang = $(this).data('lang');
+        var wordpath = Lins[lang][nr].node;
         $(this).toggleClass('selected', is_selected(wordpath));
     });
     // $('.space').removeClass('selected');
@@ -156,13 +167,13 @@ function is_selected(path, position) {
 //////////////////////////////////////////////////////////////////////
 // CLICK
 
-function click_somewhere(wordnr, pos) {
+function click_somewhere(lang, wordnr, pos) {
     var result = {};
-    var clicked = Lin[wordnr].node;
-    var clicked_lin = restricted_lin(Lin, clicked);
+    var clicked = Lins[lang][wordnr].node;
+    var clicked_lin = restricted_lin(Lins[lang], clicked);
     var selected_clicked = clicked.slice(Selected.length);
     var selected_tree = getSubtree(Tree, Selected);
-    var selected_lin = restricted_lin(Lin, Selected);
+    var selected_lin = restricted_lin(Lins[lang], Selected);
     var choices = [];
     if (pos == ON ||
         pos == BEFORE && strLin(selected_lin.slice(0, clicked_lin.length)) == strLin(clicked_lin) ||
@@ -177,15 +188,20 @@ function click_somewhere(wordnr, pos) {
                 if (Selected && new_selected_clicked)
                     new_clicked = Selected + new_selected_clicked;
                 var new_tree = updateCopy(Tree, Selected, new_selected_tree);
-                var new_lin = GRAMMARS[Grammar].linearise(new_tree);
+                var new_lin = GRAMMARS[Grammar].concretes[lang].linearise(new_tree);
                 var new_selected_lin = restricted_lin(new_lin, Selected);
-                var old_selected_lin = restricted_lin(Lin, Selected);
-                var new_clicked_lin, menu_item;
+                var old_selected_lin = restricted_lin(Lins[lang], Selected);
+                var new_clicked_lin;
+                var menu_item;
                 if (pos == ON) {
                     new_clicked_lin = restricted_lin(new_lin, new_clicked);
                     if (mapwords(new_clicked_lin).join(" ") == mapwords(clicked_lin).join(" "))
                         return;
                     menu_item = mapwords(new_selected_lin);
+                    if (!new_clicked) {
+                        // TOOD: word removed...
+                        // menu_item.push("&hellip;");
+                    }
                 } else if (new_clicked) {
                     var clicked_selected_words = new_selected_lin.map(function(token){
                         return startswith(token.node, new_clicked);
@@ -210,6 +226,8 @@ function click_somewhere(wordnr, pos) {
                     } else {
                         menu_item.push("&hellip;");
                     }
+                } else {
+                    return;
                 }
                 if (!menu_item.length) {
                     menu_item = ["&empty;"]; // &ndash;
