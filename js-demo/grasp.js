@@ -58,9 +58,15 @@ function select_tree(tree) {
                     .attr('id', 'word-' + nr)
                     .data('nr', nr)
                     .data('lang', lang)
-                    .text(Lins[lang][nr].word)
                     .click(click_word)
                     .appendTo(sent);
+                var word = Lins[lang][nr].word;
+                if (is_image(word)) {
+                    $('<img src="' + IMG_DIR + word + '">')
+                        .appendTo(wordelem);
+                } else {
+                    wordelem.text(word);
+                }
             }
         }
     });
@@ -120,14 +126,22 @@ function show_menu(clicked, menu) {
     if (Selected && menu) {
         clicked.addClass('selected');
         menu.forEach(function(item) {
-            $('<li>').append(
-                $('<a href="#">')
-                    .html(item['menu-item'].join(" "))
-                    .data('tree', item['new-tree'])
-                    .click(function(){
-                        select_tree($(this).data('tree'));
-                    })
-            ).appendTo($('#menu'));
+            var menuitem = $('<a href="#">')
+                .data('tree', item['new-tree'])
+                .click(function(){
+                    select_tree($(this).data('tree'));
+                });
+            item['menu-item'].forEach(function(w){
+                if (is_image(w)) {
+                    menuitem.append($('<img src="' + IMG_DIR + w + '">'));
+                } else {
+                    if (!w) w = "&empty;"; // &ndash;
+                    if (w == '...') w = "&hellip;";
+                    menuitem.append($('<span>').html(w));
+                }
+                menuitem.append(' ');
+            });
+            $('<li>').append(menuitem).appendTo($('#menu'));
         });
         var pos = clicked.position();
         var xadd = (clicked.outerWidth() - $('#menu').outerWidth()) / 2;
@@ -222,15 +236,15 @@ function click_somewhere(lang, wordnr, pos) {
                     new_clicked_lin = restricted_lin(new_lin, new_clicked);
                     menu_item = mapwords(new_clicked_lin);
                     if (pos == AFTER) {
-                        menu_item.unshift("&hellip;");
+                        menu_item.unshift("...");
                     } else {
-                        menu_item.push("&hellip;");
+                        menu_item.push("...");
                     }
                 } else {
                     return;
                 }
                 if (!menu_item.length) {
-                    menu_item = ["&empty;"]; // &ndash;
+                    menu_item = [""];
                 }
                 choices.push({
                     'new-tree': new_tree, 

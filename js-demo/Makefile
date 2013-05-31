@@ -11,12 +11,15 @@ DEMOHOST = gf:Sites/grasp/
 sync-demo:
 	rsync -v -a --delete --exclude '.*' . $(DEMOHOST)
 
-grammars: Manycats.js Mini.js Phrasebook.js
+grammars: Manycats.js Mini.js Phrasebook.js Phrases.js
 
 Manycats.js: Manycats.gf ManycatsEng.gf ManycatsSwe.gf
 	gf -f js -make $^
 
 Mini.js: Mini.gf MiniSwe.gf
+	gf -f js -make $^
+
+Phrases.js: Phrases.gf PhrasesSwe.gf PhrasesBliss.gf
 	gf -f js -make $^
 
 PBBASE = ~/Projekt/GF/examples/phrasebook/Phrasebook
