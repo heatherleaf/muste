@@ -1,6 +1,6 @@
 --# -path=.:alltenses
 
-abstract Phrases = PhrasesLex, Conjunction, Phrase ** {
+abstract Phrases = PhrasesLex, Conjunction, Phr ** {
 
 --Either state startcat or test with cat flag
 flags startcat = Utt ;

@@ -96,7 +96,7 @@ big = {s = table {Agr Sg Indef => table {Utr => "stor"; Neutr => "stort"};
 
 small = {s = table {Agr Sg Indef => table {Utr => "liten"; Neutr => "litet"};
                     Agr Sg Def => \\_ => "lilla";
-                    _ => \\_ => "sma"}};
+                    _ => \\_ => "små"}};
 
 see = {s = "ser"};
 kiss = {s = "kysser"};

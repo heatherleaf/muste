@@ -55,6 +55,7 @@ function GFConcrete(flags, productions, functions, sequences, categories, nr_cat
     this.coercions = {};
     this.lincats = {};
     this.linfuns = {};
+    this.max_arity = 1;
     for (var cat in this.productions) {
         setdefault(this.coercions, cat, []).push(cat);
         var prods = this.productions[cat];
@@ -72,6 +73,7 @@ function GFConcrete(flags, productions, functions, sequences, categories, nr_cat
                 var arity = cncfun.seqs.length;
                 setdefault(this.lincats, cat, arity);
                 if (this.lincats[cat] != arity) alert("Mismatching linfun arities for cat: " + cat);
+                if (arity > this.max_arity) this.max_arity = arity;
             }
         }
     }
@@ -86,33 +88,33 @@ function GFConcrete(flags, productions, functions, sequences, categories, nr_cat
     @param tree: a GFTree object
 **/
 GFAbstract.prototype.typecheck = function(tree, ntype) {
-    var ftype = this.types[tree.node];
+    var ftype = this.types[tree[0]];
     if (!ftype) 
-        throw(new TypeError("Function not found: " + tree.node));
+        throw(new TypeError("Function not found: " + tree[0]));
     if (ntype && ntype != ftype.abscat) 
-        throw(new TypeError("Function type mismatch: " + tree.node + ":" + ntype + 
+        throw(new TypeError("Function type mismatch: " + tree[0] + ":" + ntype + 
                             " (should be " + ftype.abscat + ")"));
-    if (tree.type && tree.type != ftype.abscat) 
-        throw(new TypeError("Function type mismatch: " + tree.node + ":" + tree.type + 
-                            " (should be " + ftype.abscat + ")"));
-    if (!tree.type) 
-        console.log("Missing type of function " + tree.node + " : " + ftype.abscat);
-    if (ftype.children.length != tree.children.length) 
-        throw(new TypeError("Children mismatch: " + tree.node + " has " + tree.children.length +
+    // if (tree.type && tree.type != ftype.abscat) 
+    //     throw(new TypeError("Function type mismatch: " + tree.node + ":" + tree.type + 
+    //                         " (should be " + ftype.abscat + ")"));
+    // if (!tree.type) 
+    //     console.log("Missing type of function " + tree.node + " : " + ftype.abscat);
+    if (ftype.children.length != tree.length - 1) 
+        throw(new TypeError("Children mismatch: " + tree[0] + " has " + (tree.length - 1) +
                             " children (should be " + ftype.children.length + ")"));
-    for (var i = 0; i < tree.children.length; i++) 
-        this.typecheck(tree.children[i], ftype.children[i]);
+    for (var i = 1; i < tree.length; i++) 
+        this.typecheck(tree.children[i], ftype.children[i-1]);
 }
 
 //////////////////////////////////////////////////////////////////////
 // GF linearisations
 
-var NODELEAF = ":"
+// var NODELEAF = ":"
 
 /** GFGrammar.linearise(tree):
     @param language: a String denoting which concrete syntax to use
     @param tree: a GFTree object
-    @return: an Array of {word:String, node:String} 
+    @return: an Array of {word:String, path:String} 
 **/
 GFGrammar.prototype.linearise = function(language, tree) {
     return this.concretes[language].linearise(tree);
@@ -120,86 +122,155 @@ GFGrammar.prototype.linearise = function(language, tree) {
 
 /** GFConcrete.linearise(tree):
     @param tree: a GFTree instance
-    @return: an Array of {word:String, node:String} 
+    @return: an Array of {word:String, path:String} 
 **/
 GFConcrete.prototype.linearise = function (tree) {
-    var results = _linearise(this, tree, "");
-    var lin = results[0].lin[0];
-    lin.forEach(function(w){w.node += NODELEAF});
-    return lin;
+    for each (var catlin in _linearise_nondet(this, tree, "")) {
+        return _expand_tokens(catlin.lin[0]);
+    }
 }
 
-function _linearise(concrete, tree, node) {
-    var results = [];
-    var absfun = tree.node;
-    var linfuns = concrete.linfuns[absfun];
-    var all_dtrcatlins = tree.children.map(function(dtr,k){
-        return _linearise(concrete, dtr, node + k);
-    });
-    var all_dtrcatlins_product = productlist(all_dtrcatlins);
-    foreach(all_dtrcatlins_product, function(dtrcatlins) {
-        dtrcats = dtrcatlins.map(function(catlin){return catlin.cat});
-        dtrlins = dtrcatlins.map(function(catlin){return catlin.lin});
-        var coerced_dtrcats = dtrcats.map(function(cat){return concrete.coercions[cat]});
-        var coerced_dtrcats_product = productlist(coerced_dtrcats);
-        foreach(coerced_dtrcats_product, function(dtrcs) {
-            var fun_cat_seqs_list = linfuns[dtrcs];
-            foreach(fun_cat_seqs_list, function(fun_cat_seq) {
-                var fun = fun_cat_seq.fun;
-                var cat = fun_cat_seq.cat;
-                var seqs = fun_cat_seq.seqs;
-                var lin = [];
-                foreach(seqs, function(seqnr) {
-                    var seq = concrete.sequences[seqnr];
-                    lin.push([]);
-                    var phrase = lin[lin.length-1];
-                    foreach(seq, function(arg) {
-                        if (arg instanceof SymCat) {
-                            var children = dtrlins[arg.arg][arg.param];
-                            foreach(children, function(child){
-                                phrase.push(child);
-                            });
-                        } else if (arg instanceof SymKS) {
-                            foreach(arg.tokens, function(word){
-                                phrase.push({word:word, node:node});
-                            });
-                        } else if (arg instanceof SymKP) {
-                            foreach(arg.tokens, function(word,i){
-                                var seen = {};
-                                seen[word] = true;
-                                foreach(arg.alts, function(alt){
-                                    var altw = alt.tokens[i];
-                                    if (altw && !seen[altw]) {
-                                        seen[altw] = true;
-                                        word += "/" + altw;
-                                    }
-                                });
-                                phrase.push({word:word, node:node});
-                            });
+function _expand_tokens(lin) {
+    if (!(lin instanceof Array)) {
+        throw TypeError("Linearisation must be Array: " + strObject(lin));
+    } else if (lin.length == 0) {
+        return lin;
+    } else if (lin[0].arg) {
+        var newlin = [];
+        for (var i = lin.length-1; i >= 0; i--) {
+            var path = lin[i].path;
+            var arg = lin[i].arg;
+            var tokens = arg.tokens;
+            if (arg.alts && newlin.length) {
+                altloop:
+                for each (var alt in arg.alts) {
+                    for each (var prefix in alt.follows) {
+                        if (startswith(newlin[0].word, prefix)) {
+                            tokens = alt.tokens;
+                            break altloop;
                         }
-                    });
-                });
-                results.push({cat:cat, lin:lin});
-            });
+                    }
+                }
+            }
+            for each (var word in tokens) {
+                newlin.unshift({'word':word, 'path':path});
+            }
+        }
+        return newlin;
+    } else {
+        lin.map(function(sublin){
+            return _expand_tokens(sublin);
         });
-    });
-    return results;
+    }
 }
 
-/** strLin(lin, ?focusnode, ?prefix, ?suffix)
+function _linearise_nondet(concrete, tree, path) {
+    if (tree instanceof Array) {
+        var linfuns = concrete.linfuns[tree[0]];
+        // debug(">", path, ":", strTree(tree));
+        for each (var children in _linearise_children_nondet(concrete, tree, 1, path)) {
+            // debug(":", tree[0], strObject(children));
+            for each (var fcs in linfuns[children.cats]) {
+                // debug("=", strObject(fcs));
+                var lin = [];
+                for each (var seqnr in fcs.seqs) {
+                    var phrase = [];
+                    var seq = concrete.sequences[seqnr];
+                    for each (var arg in seq) {
+                        if (arg instanceof SymCat) {
+                            for each (var token in children.lins[arg.arg][arg.param]) {
+                                phrase.push(token);
+                            }
+                        } else {
+                            phrase.push({'arg':arg, 'path':path});
+                        }
+                    }
+                    lin.push(phrase);
+                }
+                // debug(path, ":", strTree(tree), "->", fcs.cat, "/", strObject(lin));
+                yield {'cat':fcs.cat, 'lin':lin}
+            }
+        }
+    } else if (startswith(tree, "?")) {
+        var childtype = tree.slice(1);
+        for each (var cat in concrete.categories[childtype]) {
+            var arity = concrete.lincats[cat];
+            var lin = [];
+            for (var k=0; k<arity; k++) {
+                lin.push([{'word': "["+tree+"]", 'path': path+i}]);
+            }
+            yield {'cat':cat, 'lin':lin};
+        }
+
+    }
+}
+
+function _linearise_children_nondet(concrete, tree, i, path) {
+    if (i >= tree.length) {
+        yield {'cats':[], 'lins':[]};
+    } else {
+        for each (var child in _linearise_nondet(concrete, tree[i], path + i)) {
+            // debug("+", path, i, ":", strObject(child));
+            for each (var children in _linearise_children_nondet(concrete, tree, i+1, path)) {
+                var lins = [child.lin].concat(children.lins);
+                var cats = [child.cat].concat(children.cats);
+                // debug("++", path, i+1, ":", strObject(cats), "--", strObject(lins));
+                for each (var cocats in _coerce_cats(concrete, cats, 0)) {
+                    yield {'cats':cocats, 'lins':lins};
+                }
+            }
+        }
+    }
+}
+
+function _coerce_cats(concrete, cats, i) {
+    if (i >= cats.length) {
+        yield [];
+    } else {
+        for each (var cocat in concrete.coercions[cats[i]]) {
+            for each (var cocats in _coerce_cats(concrete, cats, i+1)) {
+                yield [cocat].concat(cocats);
+            }
+        }
+    }
+}
+
+function _linearise_child_nondet(concrete, tree, i, path) {
+    var child = tree[i];
+    if (!child || startswith(child, "?")) {
+        var childtype = concrete.abstract.types[tree[0]].children[i-1];
+        if (!child) {
+            child = "?" + childtype;
+        }
+        for each (var cat in concrete.categories[childtype]) {
+            var arity = concrete.lincats[cat];
+            var lin = [];
+            for (var k=0; k<arity; k++) {
+                lin.push([{'word': "["+child+"]", 'path': path+i}]);
+            }
+            yield {'cat':cat, 'lin':lin};
+        }
+    } else {
+        for each (var result in _linearise_nondet(concrete, tree[i], path + i)) {
+            yield result;
+        }
+    }
+}
+
+/** strLin(lin, ?focuspath, ?prefix, ?suffix)
     @param lin: a linearisation as returned by GFConcrete.linearise()
-    @param focusnode: the highlighted node (a string of digits)
+    @param focuspath: the highlighted node (a string of digits)
     @param prefix, suffix: the string that should be used for highlighting
     @return: a String
 **/
 function strLin(lin, focus, prefix, suffix) {
     if (prefix == null) prefix = "*";
-    if (suffix == null) suffix = "";
+    if (suffix == null) suffix = prefix;
     return lin.map(function(w){
-        if (startswith(w.node, focus)) {
-            return prefix + w.word + "/" + w.node + suffix;
+        if (startswith(w.path, focus)) {
+            return prefix + w.word + "/" + w.path + suffix;
         } else {
-            return w.word + "/" + w.node;
+            return w.word + "/" + w.path;
         }
     }).join(" ");
 }
@@ -208,44 +279,44 @@ function strLin(lin, focus, prefix, suffix) {
 //////////////////////////////////////////////////////////////////////
 // GF trees
 
-/** GFTree(node, type, ?children): creates a GF tree
+/** GFTree(node, ?children): creates a GF tree
    @param node, type: String
    @param children: an Array of GFTree's
    @return: a new object
 **/
-function GFTree(node, type, children) {
-    return {'node': node,
-            'type': type,
-            'children': children || []};
+function GFTree(node, children) {
+    if (children) {
+        return [node].concat(children);
+    } else {
+        return [node];
+    }
 }
 
-/** strTree(tree, ?focusnode, ?prefix, ?suffix)
+/** strTree(tree, ?focuspath, ?prefix, ?suffix)
     @param tree: a GF tree
-    @param focusnode: the highlighted node (a string of digits)
+    @param focuspath: the highlighted node (a string of digits)
     @param prefix, suffix: the string that should be used for highlighting
     @return: a String
 **/
-function strTree(tree, focusnode, prefix, suffix) {
+function strTree(tree, focuspath, prefix, suffix) {
     if (prefix == null) prefix = "*";
-    if (suffix == null) suffix = "";
+    if (suffix == null) suffix = prefix;
     var result;
-    if (tree instanceof Object && (tree.node || tree.type)) {
-        result = (tree.node || "?") + (tree.type ? ":"+tree.type : "");
-        if (tree.children) {
-            tree.children.forEach(function(child, n) {
-                var newnode = focusnode && focusnode[0] == n ? focusnode.slice(1) : null;
-                result += " " + strTree(child, newnode, prefix, suffix);
-            });
-        }
+    if (tree instanceof Array) {
+        result = tree.map(function(child, n) {
+            var newpath = focuspath && focuspath[0] == n ? focuspath.slice(1) : null;
+            return strTree(child, newpath, prefix, suffix);
+        });
+        result = "(" + result.join(" ") + ")";
     } else if (tree == null) {
         result = "?";
     } else {
         result = "" + tree;
     }
-    if (focusnode === "" || focusnode === NODELEAF) 
-        return prefix + "(" + result + ")" + suffix;
+    if (focuspath === "") 
+        return prefix + result + suffix;
     else
-        return "(" + result + ")";
+        return result;
 }
 
 /** copyTree(tree)
@@ -253,58 +324,65 @@ function strTree(tree, focusnode, prefix, suffix) {
     @return: a deep copy of the tree
 **/
 function copyTree(tree) {
-    return GFTree(tree.node, tree.type,
-                  tree.children.map(function(child){
-                      return copyTree(child);
-                  }));
+    if (tree instanceof Array) {
+        return [copyTree(child) for each (child in tree)];
+    } else {
+        return tree;
+    }
 }
 
-/** getSubtree(tree, node)
+/** getSubtree(tree, path)
     @param tree: a GF tree
-    @param node: node reference (a string of digits)
-    @return: the subtree specified by the given node
+    @param path: node reference (a string of digits)
+    @return: the subtree specified by the given path
 **/
-function getSubtree(tree, node) {
+function getSubtree(tree, path) {
     var subtree = tree;
-    for ( var i = 0; i < node.length; i++) {
-        var n = node[i];
-        if (n !== NODELEAF)
-            subtree = subtree.children[n];
+    for ( var i = 0; i < path.length; i++) {
+        var n = path[i];
+        // if (n !== NODELEAF)
+        subtree = subtree[n];
         if (!subtree) return;
     }
     return subtree;
 };
 
-/** updateSubtree(tree, node, update)
+/** updateSubtree(tree, path, update)
     @param tree: a GF tree
-    @param node: node reference (a string of digits)
+    @param path: node reference (a string of digits)
     @param update: a function that updates the specified subtree
     -- or a tree which should replace the existing subtree
 **/
-function updateSubtree(tree, node, update) {
-    do {
-        var n = node[node.length-1];
-        node = node.slice(0, -1);
-    } while (n === NODELEAF);
-    var parent = getSubtree(tree, node);
+function updateSubtree(tree, path, update) {
+    // do {
+    var n = path[path.length-1];
+    path = path.slice(0, -1);
+    // } while (n === NODELEAF);
+    var parent = getSubtree(tree, path);
     if (update instanceof Function) {
-        parent.children[n] = update(parent.children[n]);
+        parent[n] = update(parent[n]);
     } else {
-        parent.children[n] = update;
+        parent[n] = update;
     }
 }
 
-/** updateCopy(tree, node, update)
+/** updateCopy(tree, path, update)
     @param tree: a GF tree
-    @param node: node reference (a string of digits)
+    @param path: node reference (a string of digits)
     @param update: a function that updates the specified subtree
     -- or a tree which should replace the existing subtree
     @return: an updated copy of the tree - the original tree is left unchanged
 **/
-function updateCopy(tree, node, update) {
-    var newtree = copyTree(tree);
-    updateSubtree(newtree, node, update);
-    return newtree;
+function updateCopy(tree, path, update) {
+    if (path.length > 0) {
+        var newtree = copyTree(tree);
+        updateSubtree(newtree, path, update);
+        return newtree;
+    } else if (update instanceof Function) {
+        return update(parent[n]);
+    } else {
+        return update;
+    }
 }
 
 /** parseFocusedGFTree(descr)
@@ -326,22 +404,20 @@ function parseFocusedGFTree(descr) {
         .replace(/^ +| +$/g,"")
         .split(/ +/);
     var focus = null;
-    var stack = [GFTree()];
+    var stack = [[]];
     tokens.forEach(function(token){
         if (token[0] == "*") {
-            focus = stack.map(function(t){return t.children.length}).join("").slice(1);
+            focus = stack.map(function(t){return t.length}).join("").slice(1);
             token = token.slice(1);
         }
         if (token[0] == "(") {
-            if (stack.length == 1 && stack[0].children.length > 0) {
+            if (stack.length == 1 && stack[0].length > 0) {
                 console.log("PARSE ERROR: Expected end-of-string, found '(': " + descr);
             } else if (token.length <= 1) {
                 console.log("PARSE ERROR: Expected node, found end-of-string: " + descr);
             } else {
-                nodetype = token.slice(1).split(":");
-                node = nodetype[0];
-                type = nodetype[1] || null;
-                stack.push(GFTree(node, type));
+                node = token.slice(1);
+                stack.push(GFTree(node));
             }
         } else if (token == ")") {
             if (stack.length == 1) {
@@ -349,7 +425,7 @@ function parseFocusedGFTree(descr) {
                 console.log("PARSE ERROR: " + err + ", found ')': " + descr);
             } else {
                 var tree = stack.pop();
-                stack[stack.length-1].children.push(tree);
+                stack[stack.length-1].push(tree);
             }
         } else {
             console.log("PARSE ERROR: Unknown token " + token + ": " + descr);
@@ -357,10 +433,10 @@ function parseFocusedGFTree(descr) {
     });
     if (stack.length > 1) {
         console.log("PARSE ERROR: Expected close bracket, found end-of-string: " + descr);
-    } else if (stack[0].children.length == 0) {
+    } else if (stack[0].length == 0) {
         console.log("PARSE ERROR: Expected open bracket, found end-of-string: " + descr);
     } else {
-        return {tree:stack[0].children[0], focus:focus};
+        return {tree:stack[0][0], focus:focus};
     }
 }
 
@@ -437,6 +513,7 @@ function mkCat(i) { return "C" + i }
 function mkSeq(i) { return "S" + i }
 
 function Type(children, abscat) {
+    // return [abscat].concat(children);
     this.children = children;
     this.abscat = abscat;
 }

@@ -508,9 +508,9 @@ fun
 
 --UTTERANCES
 
-	yes_Utt : Utt ;
-	no_Utt : Utt ;
-	hour_Utt : Utt ;
+	-- yes_Utt : Utt ;
+	-- no_Utt : Utt ;
+	-- hour_Utt : Utt ;
 
 --INTERJECTIONS
 

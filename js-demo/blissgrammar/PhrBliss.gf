@@ -1,6 +1,6 @@
 --# -path=.:alltenses
 
-concrete PhrBliss of Phrase = CatBliss ** open Prelude in {
+concrete PhrBliss of Phr = CatBliss ** open Prelude in {
 
 -- When a phrase is built from an utterance it can be prefixed
 -- with a phrasal conjunction (such as "but", "therefore")
@@ -8,13 +8,15 @@ concrete PhrBliss of Phrase = CatBliss ** open Prelude in {
 
 lin
 
-    PhrUtt pconj utt voc = ss (pconj.s ++ utt.s ++ voc.s);
+-- PhrUtt pconj utt voc = ss (pconj.s ++ utt.s ++ voc.s);
 
 -- Utterances are formed from sentences, questions, and imperatives.
 
     UttS s = s;
     UttQS qs = qs;
     UttImpSg pol imp = ss (pol.s ++ imp.s);
+
+{-
     UttImpPl pol imp = ss (pol.s ++ imp.s);
     UttImpPol pol imp = ss (pol.s ++ imp.s);
 
@@ -45,5 +47,6 @@ lin
 
     NoVoc = ss "";
     VocNP np = np;
+-}
 
 }

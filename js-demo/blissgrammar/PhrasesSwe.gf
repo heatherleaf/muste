@@ -1,6 +1,6 @@
 --# -path=.:alltenses
 
-concrete PhrasesSwe of Phrases = PhrasesLexSwe, ConjunctionSwe, PhraseSwe ** open (G=GrammarSwe) in {
+concrete PhrasesSwe of Phrases = PhrasesLexSwe, ConjunctionSwe, PhrSwe ** open (G=GrammarSwe) in {
 
 lin
 
