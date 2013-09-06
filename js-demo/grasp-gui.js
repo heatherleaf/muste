@@ -39,7 +39,7 @@ function initialize_grammar() {
     var prefix = common_prefix(languages);
     languages.push(ABSTRACT);
     Grammar.concretes[ABSTRACT] = {'abstract': Grammar.abstract, 'linearise': linearise_abstract};
-    for each (var lang in languages) {
+    for (var lang of languages) {
         var langtext = startswith(lang, prefix) ? lang.slice(prefix.length) : lang;
         $('<span class="language clickable">')
             .html("&nbsp;" + langtext + "&nbsp;")
@@ -179,7 +179,7 @@ function click_word(event) {
         }
     });
 
-    for each (var item in menu) {
+    for (var item of menu) {
         // item = {dist, tree, lin, path, pleft, pright, sleft, sright};
         var menuitem = $('<span class="clickable">')
             .data('tree', item.tree)
@@ -191,7 +191,7 @@ function click_word(event) {
         } else {
             var words = mapwords(item.lin.slice(item.sleft, item.sright+1));
             words = map_images_and_spacing(words);
-            for each (var w in words) {
+            for (var w of words) {
                 // if (!w) w = "&empty;"; // &ndash;
                 // if (w == '...') w = "&hellip;";
                 menuitem.append($('<span>').html(w));

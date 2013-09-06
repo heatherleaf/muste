@@ -23,7 +23,7 @@ function calculate_menus(grammar, tree, wordnr) {
         console.group("Linearisation: " + strLin(lin, phrasepath));
 
         var subtrees = {};
-        for each (var sub in generate_subtrees(phrasetree, MAX_DEPTH)) {
+        for (var sub of generate_subtrees(phrasetree, MAX_DEPTH)) {
             var typ = fun2typing[sub[0]].abscat;
             var args = fun2typing[sub[0]].children;
             if (!(typ in subtrees)) subtrees[typ] = [];
@@ -34,7 +34,7 @@ function calculate_menus(grammar, tree, wordnr) {
         console.time("Generating phrases");
         var ctr = 0;
         var simphrases0 = [];
-        for each (var simphr in generate_tree(phrasetyp, typing2funs, subtrees, MAX_DEPTH)) {
+        for (var simphr of generate_tree(phrasetyp, typing2funs, subtrees, MAX_DEPTH)) {
             if (phrasetree[0] != simphr[0]) {
                 var dist = treedist(phrasetree, simphr);
                 if (dist > 0) {
@@ -54,10 +54,10 @@ function calculate_menus(grammar, tree, wordnr) {
         filterloop:
         for (var dist = 1; dist <= simphrases0.length; dist++) {
             simphrases[dist] = [];
-            for each (var simphr in simphrases0[dist] || []) {
+            for (var simphr of simphrases0[dist] || []) {
                 dloop:
                 for (var d = 1; d < dist; d++) {
-                     for each (var dp in simphrases[d] || []) {
+                     for (var dp of simphrases[d] || []) {
                          if (d + treedist(dp, simphr) <= dist) {
                              simphr = null;
                              ctr1++;
@@ -83,8 +83,8 @@ function calculate_menus(grammar, tree, wordnr) {
         var starttime = getTime();
         menuloop:
         for (var dist = 1; dist <= simphrases.length; dist++) {
-            for each (var simphrase in simphrases[dist] || []) {
-                for each (var instphrase in instantiate_tree(typing2funs, simphrase)) {
+            for (var simphrase of simphrases[dist] || []) {
+                for (var instphrase of instantiate_tree(typing2funs, simphrase)) {
                     if (phrasetree[0] == instphrase[0]) 
                         continue;
                     var simtree = updateCopy(tree, phrasepath, instphrase);
@@ -136,7 +136,7 @@ function calculate_menus(grammar, tree, wordnr) {
     CurrentMenus = [];
     var plins = Object.keys(menus);
     plins.sort(function(a,b){ return unhash(a).length - unhash(b).length });
-    for each (var plin in plins) {
+    for (var plin of plins) {
         var menu = menus[plin];
         var slins = Object.keys(menu);
         slins.sort(function(a,b){ 
@@ -164,8 +164,8 @@ function instantiate_tree(typing2funs, tree, notroot) {
         if (tree.length == 0) {
             yield [];
         } else {
-            for each (var child in instantiate_tree(typing2funs, tree[0], notroot)) {
-                for each (var children in instantiate_tree(typing2funs, tree.slice(1), true)) {
+            for (var child of instantiate_tree(typing2funs, tree[0], notroot)) {
+                for (var children of instantiate_tree(typing2funs, tree.slice(1), true)) {
                     yield [child].concat(children);
                 }
             }
@@ -177,7 +177,7 @@ function instantiate_tree(typing2funs, tree, notroot) {
         if (notroot && args.length == 0) {
             funs = [funs[0]];
         }
-        for each (var fun in funs) {
+        for (var fun of funs) {
             yield fun;
         }
     } else {
@@ -188,8 +188,8 @@ function instantiate_tree(typing2funs, tree, notroot) {
 function generate_subtrees(tree, maxdepth) {
     if (isTree(tree) && maxdepth > 0) {
         yield tree;
-        for each (var child in tree.slice(1)) {
-            for each (var sub in generate_subtrees(child, maxdepth-1)) {
+        for (var child of tree.slice(1)) {
+            for (var sub of generate_subtrees(child, maxdepth-1)) {
                 yield sub;
             }
         }
@@ -199,7 +199,7 @@ function generate_subtrees(tree, maxdepth) {
 
 function generate_tree(typ, typing2funs, subtrees, maxdepth) { // also visited?
     if (typ in subtrees) {
-        for each (var sub in subtrees[typ]) {
+        for (var sub of subtrees[typ]) {
             yield sub;
         }
     }
@@ -210,8 +210,8 @@ function generate_tree(typ, typing2funs, subtrees, maxdepth) { // also visited?
             if (funs.length > 1) {
                 funs = [hash([typ].concat(args))];
             }
-            for each (var fun in funs) {
-                for each (var children in generate_children(args, 0, typing2funs, subtrees, maxdepth - 1)) {
+            for (var fun of funs) {
+                for (var children of generate_children(args, 0, typing2funs, subtrees, maxdepth - 1)) {
                     yield [fun].concat(children);
                 }
             }
@@ -223,8 +223,8 @@ function generate_children(args, i, typing2funs, subtrees, maxdepth) {
     if (i >= args.length) {
         yield [];
     } else {
-        for each (var child in generate_tree(args[i], typing2funs, subtrees, maxdepth)) {
-            for each (var children in generate_children(args, i + 1, typing2funs, subtrees, maxdepth)) {
+        for (var child of generate_tree(args[i], typing2funs, subtrees, maxdepth)) {
+            for (var children of generate_children(args, i + 1, typing2funs, subtrees, maxdepth)) {
                 yield [child].concat(children);
             }
         }

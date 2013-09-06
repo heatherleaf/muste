@@ -125,7 +125,7 @@ GFGrammar.prototype.linearise = function(language, tree) {
     @return: an Array of {word:String, path:String} 
 **/
 GFConcrete.prototype.linearise = function (tree) {
-    for each (var catlin in _linearise_nondet(this, tree, "")) {
+    for (var catlin of _linearise_nondet(this, tree, "")) {
         return _expand_tokens(catlin.lin[0]);
     }
 }
@@ -143,8 +143,8 @@ function _expand_tokens(lin) {
             var tokens = arg.tokens;
             if (arg.alts && newlin.length) {
                 altloop:
-                for each (var alt in arg.alts) {
-                    for each (var prefix in alt.follows) {
+                for (var alt of arg.alts) {
+                    for (var prefix of alt.follows) {
                         if (startswith(newlin[0].word, prefix)) {
                             tokens = alt.tokens;
                             break altloop;
@@ -167,15 +167,15 @@ function _expand_tokens(lin) {
 function _linearise_nondet(concrete, tree, path) {
     if (tree instanceof Array) {
         var linfuns = concrete.linfuns[tree[0]];
-        for each (var children in _linearise_children_nondet(concrete, tree, 1, path)) {
-            for each (var fcs in linfuns[children.cats]) {
+        for (var children of _linearise_children_nondet(concrete, tree, 1, path)) {
+            for (var fcs of linfuns[children.cats] || []) {
                 var lin = [];
-                for each (var seqnr in fcs.seqs) {
+                for (var seqnr of fcs.seqs) {
                     var phrase = [];
                     var seq = concrete.sequences[seqnr];
-                    for each (var arg in seq) {
+                    for (var arg of seq) {
                         if (arg instanceof SymCat) {
-                            for each (var token in children.lins[arg.arg][arg.param]) {
+                            for (var token of children.lins[arg.arg][arg.param]) {
                                 phrase.push(token);
                             }
                         } else {
@@ -189,7 +189,7 @@ function _linearise_nondet(concrete, tree, path) {
         }
     } else if (startswith(tree, "?")) {
         var childtype = tree.slice(1);
-        for each (var cat in concrete.categories[childtype]) {
+        for (var cat of concrete.categories[childtype]) {
             var arity = concrete.lincats[cat];
             var lin = [];
             for (var k=0; k<arity; k++) {
@@ -205,11 +205,11 @@ function _linearise_children_nondet(concrete, tree, i, path) {
     if (i >= tree.length) {
         yield {'cats':[], 'lins':[]};
     } else {
-        for each (var child in _linearise_nondet(concrete, tree[i], path + i)) {
-            for each (var children in _linearise_children_nondet(concrete, tree, i+1, path)) {
+        for (var child of _linearise_nondet(concrete, tree[i], path + i)) {
+            for (var children of _linearise_children_nondet(concrete, tree, i+1, path)) {
                 var lins = [child.lin].concat(children.lins);
                 var cats = [child.cat].concat(children.cats);
-                for each (var cocats in _coerce_cats(concrete, cats, 0)) {
+                for (var cocats of _coerce_cats(concrete, cats, 0)) {
                     yield {'cats':cocats, 'lins':lins};
                 }
             }
@@ -221,8 +221,8 @@ function _coerce_cats(concrete, cats, i) {
     if (i >= cats.length) {
         yield [];
     } else {
-        for each (var cocat in concrete.coercions[cats[i]]) {
-            for each (var cocats in _coerce_cats(concrete, cats, i+1)) {
+        for (var cocat of concrete.coercions[cats[i]]) {
+            for (var cocats of _coerce_cats(concrete, cats, i+1)) {
                 yield [cocat].concat(cocats);
             }
         }
@@ -236,7 +236,7 @@ function _linearise_child_nondet(concrete, tree, i, path) {
         if (!child) {
             child = "?" + childtype;
         }
-        for each (var cat in concrete.categories[childtype]) {
+        for (var cat of concrete.categories[childtype]) {
             var arity = concrete.lincats[cat];
             var lin = [];
             for (var k=0; k<arity; k++) {
@@ -245,7 +245,7 @@ function _linearise_child_nondet(concrete, tree, i, path) {
             yield {'cat':cat, 'lin':lin};
         }
     } else {
-        for each (var result in _linearise_nondet(concrete, tree[i], path + i)) {
+        for (var result of _linearise_nondet(concrete, tree[i], path + i)) {
             yield result;
         }
     }
@@ -319,7 +319,7 @@ function strTree(tree, focuspath, prefix, suffix) {
 **/
 function copyTree(tree) {
     if (tree instanceof Array) {
-        return [copyTree(child) for each (child in tree)];
+        return tree.map(copyTree);
     } else {
         return tree;
     }
