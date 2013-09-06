@@ -152,11 +152,11 @@ function _expand_tokens(lin) {
                     }
                 }
             }
-            for each (var word in tokens) {
-                newlin.unshift({'word':word, 'path':path});
+            for (var j = tokens.length-1; j >= 0; j--) {
+                newlin.push({'word':tokens[j], 'path':path});
             }
         }
-        return newlin;
+        return newlin.reverse();
     } else {
         lin.map(function(sublin){
             return _expand_tokens(sublin);
@@ -167,11 +167,8 @@ function _expand_tokens(lin) {
 function _linearise_nondet(concrete, tree, path) {
     if (tree instanceof Array) {
         var linfuns = concrete.linfuns[tree[0]];
-        // debug(">", path, ":", strTree(tree));
         for each (var children in _linearise_children_nondet(concrete, tree, 1, path)) {
-            // debug(":", tree[0], strObject(children));
             for each (var fcs in linfuns[children.cats]) {
-                // debug("=", strObject(fcs));
                 var lin = [];
                 for each (var seqnr in fcs.seqs) {
                     var phrase = [];
@@ -187,7 +184,6 @@ function _linearise_nondet(concrete, tree, path) {
                     }
                     lin.push(phrase);
                 }
-                // debug(path, ":", strTree(tree), "->", fcs.cat, "/", strObject(lin));
                 yield {'cat':fcs.cat, 'lin':lin}
             }
         }
@@ -210,11 +206,9 @@ function _linearise_children_nondet(concrete, tree, i, path) {
         yield {'cats':[], 'lins':[]};
     } else {
         for each (var child in _linearise_nondet(concrete, tree[i], path + i)) {
-            // debug("+", path, i, ":", strObject(child));
             for each (var children in _linearise_children_nondet(concrete, tree, i+1, path)) {
                 var lins = [child.lin].concat(children.lins);
                 var cats = [child.cat].concat(children.cats);
-                // debug("++", path, i+1, ":", strObject(cats), "--", strObject(lins));
                 for each (var cocats in _coerce_cats(concrete, cats, 0)) {
                     yield {'cats':cocats, 'lins':lins};
                 }

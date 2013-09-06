@@ -10,8 +10,8 @@
   <script type="application/javascript" src="Phrasebook.js"></script>
   <script type="application/javascript">
     var Grammar = Phrasebook;
-    var InitialTree = "(PQuestion (QDoHave (YouPolFemale) (OneObj (ObjPlural (Apple)))))";
-    var ImagePath = 'bliss_h78_transp_png/';
+    // var InitialTree = "(PQuestion (QDoHave (YouPolFemale) (OneObj (ObjPlural (Apple)))))";
+    var InitialTree = "(PQuestion (QWhereModVerbPhrase (MCan) (IFemale) (V2Buy (OneObj (ObjPlural (Apple))))))";
   </script>
   <script type="application/javascript;version=1.7" src="grasp.js"></script>
   <script type="application/javascript;version=1.7" src="grasp-gui.js"></script>
@@ -19,6 +19,10 @@
 <body>
 <center>
 <div><span id="languages"></span></div>
+<div id="firefox-only">
+  <h3>I'm sorry, but your browser cannot display the GRASP editor!</h3>
+  <p>Try Firefox instead</p>
+</div>
 <div id="sentences"></div>
 <ul id="menu"></ul>
 </center>

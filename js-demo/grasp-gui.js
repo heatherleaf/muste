@@ -9,6 +9,8 @@ var STRIKED = 'striked';
 var INACTIVE = 'inactive';
 var HIGHLIGHTED = 'highlighted';
 
+var BIND = "&+";
+
 $(function() {
     initialize_grammar();
     $('body').click(function(){
@@ -16,6 +18,7 @@ $(function() {
         $('.word').removeClass(HIGHLIGHTED).removeClass(STRIKED);
         $('#menu').empty().hide();
     });
+    $('#firefox-only').hide();
 });
 
 function initialize_grammar() {
@@ -38,7 +41,7 @@ function initialize_grammar() {
     Grammar.concretes[ABSTRACT] = {'abstract': Grammar.abstract, 'linearise': linearise_abstract};
     for each (var lang in languages) {
         var langtext = startswith(lang, prefix) ? lang.slice(prefix.length) : lang;
-        $('<a href="#" class="language">')
+        $('<span class="language clickable">')
             .html("&nbsp;" + langtext + "&nbsp;")
             .data(CONCRETE, lang)
             .click(toggle_language)
@@ -46,7 +49,8 @@ function initialize_grammar() {
         $('<p id="' + lang + '">')
             .appendTo($('#sentences'));
     }
-    $('.language').last().addClass(INACTIVE);
+    // Only the first 4 languages are shown by default:
+    $('.language').slice(4).addClass(INACTIVE); 
     showhide_languages();
 
     select_tree(parseGFTree(InitialTree));
@@ -91,31 +95,53 @@ function set_and_show_tree(tree) {
     $('.language').each(function(){
         var lang = $(this).data(CONCRETE);
         var lin = Grammar.concretes[lang].linearise(tree);
-        for (var nr = 0; nr < lin.length; nr++) {
-            var word = lin[nr].word;
-            if (word == "&+") {
-                // TODO: handle the token &+ in a good way
-                continue;
-            }
-            var wordelem = $('<a class="word" href="#">')
-                .data('nr', nr)
+        var words = map_images_and_spacing(mapwords(lin));
+        for (var i = 0; i < words.length; i++) {
+            var wordelem = $('<span class="word clickable">')
+                .html(words[i])
+                .data('nr', i)
                 .data('lang', lang)
-                .data('path', lin[nr].path)
+                .data('path', lin[i].path)
                 .click(click_word)
                 .appendTo($('#' + lang));
-            var img = get_image(word);
-            if (img) {
-                word = '<img src="' + img + '">';
-            }
-            wordelem.html("&nbsp;" + word + "&nbsp;");
         }
     });
+}
+
+function map_images_and_spacing(words) {
+    var newwords = [];
+    for (var i = 0; i < words.length; i++) {
+        var word = words[i];
+        var img = get_image(word);
+        if (img) {
+            word = '<img src="' + img + '">';
+        }
+        // handling the special token BIND, and spacing before/after punctuation
+        if (word == BIND) { 
+            newwords[i] = "";
+            continue;
+        } 
+        var prefix = "&nbsp;", suffix = "&nbsp;";
+        var prev = words[i-1], next = words[i+1];
+        if (prev == BIND || prev == '¿' || prev == '¡' ||
+            word == '.' || word == '?' || word == '!') {
+            prefix = "";
+        } 
+        if (next == BIND || word == '¿' || word == '¡' ||
+            next == '.' || next == '?' ||  next == '!') {
+            suffix = "";
+        }
+        newwords[i] = prefix + word + suffix;
+    }
+    return newwords;
 }
 
 function get_image(word) {
     if (typeof(word) == "string" && word.slice(-4) == '.png')
         return ImagePath + word;
 }
+// we need to define where images can be found, e.g.:
+// var ImagePath = 'bliss_h78_transp_png/';
 
 function clear_selection() {
     $('.word').removeClass(HIGHLIGHTED).removeClass(STRIKED);
@@ -155,7 +181,7 @@ function click_word(event) {
 
     for each (var item in menu) {
         // item = {dist, tree, lin, path, pleft, pright, sleft, sright};
-        var menuitem = $('<a href="#">')
+        var menuitem = $('<span class="clickable">')
             .data('tree', item.tree)
             .click(function(){
                 select_tree($(this).data('tree'));
@@ -164,20 +190,11 @@ function click_word(event) {
             menuitem.append($('<span>').html("&empty;")); // &ndash;
         } else {
             var words = mapwords(item.lin.slice(item.sleft, item.sright+1));
+            words = map_images_and_spacing(words);
             for each (var w in words) {
-                if (w == "&+") {
-                    // TODO: handle the token &+ in a good way
-                    continue;
-                }
-                var img = get_image(w);
-                if (img) {
-                    menuitem.append($('<img src="' + img + '">'));
-                } else {
-                    // if (!w) w = "&empty;"; // &ndash;
-                    // if (w == '...') w = "&hellip;";
-                    menuitem.append($('<span>').html(w));
-                }
-                menuitem.append(' ');
+                // if (!w) w = "&empty;"; // &ndash;
+                // if (w == '...') w = "&hellip;";
+                menuitem.append($('<span>').html(w));
             }
         }
         $('<li>').append(menuitem).appendTo($('#menu'));

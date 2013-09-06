@@ -16,7 +16,7 @@ body {
 }
 
 .language {
-    margin: 1em;
+    margin: 0.5em;
 }
 
 #sentences {
@@ -46,19 +46,22 @@ body {
     border-radius: 8px;
 }
 
-.highlighted, #languages a {
+.highlighted, #languages span {
     background-color: #ffa;
 }
 
-#languages a.inactive {
-    background-color: transparent;
-    text-decoration: line-through;
-    color: #aaa !important;
+.clickable:hover {
+    cursor: pointer;
 }
 
-a {
-    text-decoration: none; 
-    color: black;
+.striked {
+    text-decoration: line-through;
+}
+
+#languages span.inactive {
+    background-color: transparent;
+    text-decoration: line-through;
+    color: #aaa;
 }
 
 img {
