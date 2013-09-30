@@ -4,7 +4,7 @@ import glob
 import os.path
 import PIL.Image
 
-GLOB = "bliss_h78_transp_png/*.png"
+GLOB = "blissimages/*.png"
 METANAME = 'BlissMetadata'
 
 def width(fname):

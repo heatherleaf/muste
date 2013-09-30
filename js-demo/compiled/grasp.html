@@ -8,15 +8,16 @@
    <script type="application/javascript" src="traceur-runtime.js"></script> 
   <script type="application/javascript" src="utilities.js"></script>
   <script type="application/javascript" src="GF.js"></script>
-  <script type="application/javascript" src="metadata.js"></script>
+  <script type="application/javascript" src="bliss-metadata.js"></script>
   <script type="application/javascript" src="Phrasebook.js"></script>
   <script type="application/javascript" src="grasp.js"></script>
   <script type="application/javascript" src="grasp-gui.js"></script>
   <script type="application/javascript">
     var Grammar = Phrasebook;
+    var MapWordsToHTML = {'PhrasebookZbl': map_words_to_images};
+    var Metadata = {'PhrasebookZbl': BlissMetadata};
     // var InitialTree = "(PQuestion (QDoHave (YouPolFemale) (OneObj (ObjPlur (Noodles)))))";
     var InitialTree = "(PQuestion (QWhereModVerbPhrase (MCan) (IFemale) (V2Buy (OneObj (ObjPlural (SuchKind (PropQuality (Bad)) (Apple)))))))";
-    function GetBlissImage(word) {return 'bliss_h78_transp_png/' + word + '.png'}
   </script>
 </head>
 <body>
