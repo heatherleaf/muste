@@ -165,7 +165,7 @@ function _expand_tokens(lin) {
 }
 
 function _linearise_nondet(concrete, tree, path) {
-    if (tree instanceof Array) {
+    if (tree instanceof Array && concrete.linfuns[tree[0]]) {
         var linfuns = concrete.linfuns[tree[0]];
         for (var children of _linearise_children_nondet(concrete, tree, 1, path)) {
             for (var fcs of linfuns[children.cats] || []) {
@@ -187,17 +187,23 @@ function _linearise_nondet(concrete, tree, path) {
                 yield {'cat':fcs.cat, 'lin':lin}
             }
         }
-    } else if (startswith(tree, "?")) {
-        var childtype = tree.slice(1);
-        for (var cat of concrete.categories[childtype]) {
-            var arity = concrete.lincats[cat];
+    } else {
+        var childtype;
+        if (tree instanceof Array) {
+            childtype = concrete.abstract.types[tree[0]].abscat;
+            tree = strTree(tree[0]);
+        } else if (startswith(tree, "?")) {
+            childtype = tree.slice(1);
+        }
+        var cats = concrete.categories[childtype] || ["?"];
+        for (var cat of cats) {
+            var arity = concrete.lincats[cat] || concrete.max_arity;
             var lin = [];
             for (var k=0; k<arity; k++) {
-                lin.push([{'word': "["+tree+"]", 'path': path+i}]);
+                lin.push([{'arg': {'tokens':["["+tree+"]"]}, 'path': path}]);
             }
             yield {'cat':cat, 'lin':lin};
         }
-
     }
 }
 
@@ -221,32 +227,11 @@ function _coerce_cats(concrete, cats, i) {
     if (i >= cats.length) {
         yield [];
     } else {
-        for (var cocat of concrete.coercions[cats[i]]) {
-            for (var cocats of _coerce_cats(concrete, cats, i+1)) {
-                yield [cocat].concat(cocats);
+        var cocats = concrete.coercions[cats[i]] || [cats[i]];
+        for (var cocat of cocats) {
+            for (var cocats_rest of _coerce_cats(concrete, cats, i+1)) {
+                yield [cocat].concat(cocats_rest);
             }
-        }
-    }
-}
-
-function _linearise_child_nondet(concrete, tree, i, path) {
-    var child = tree[i];
-    if (!child || startswith(child, "?")) {
-        var childtype = concrete.abstract.types[tree[0]].children[i-1];
-        if (!child) {
-            child = "?" + childtype;
-        }
-        for (var cat of concrete.categories[childtype]) {
-            var arity = concrete.lincats[cat];
-            var lin = [];
-            for (var k=0; k<arity; k++) {
-                lin.push([{'word': "["+child+"]", 'path': path+i}]);
-            }
-            yield {'cat':cat, 'lin':lin};
-        }
-    } else {
-        for (var result of _linearise_nondet(concrete, tree[i], path + i)) {
-            yield result;
         }
     }
 }

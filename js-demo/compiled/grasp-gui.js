@@ -29,6 +29,7 @@ function initialize_grammar() {
   $('#languages').empty();
   $('#sentences').empty();
   var languages = Object.keys(Grammar.concretes);
+  languages = ["PhrasebookEng", "PhrasebookZbl"];
   var prefix = common_prefix(languages);
   languages.push(ABSTRACT);
   Grammar.concretes[ABSTRACT] = {
@@ -43,7 +44,7 @@ function initialize_grammar() {
       $('<p id="' + lang + '">').appendTo($('#sentences'));
     }
   }
-  $('.language').slice(4).addClass(INACTIVE);
+  $('.language').slice(3).addClass(INACTIVE);
   showhide_languages();
   select_tree(parseGFTree(InitialTree));
 }
@@ -83,38 +84,62 @@ function set_and_show_tree(tree) {
   $('.language').each(function() {
     var lang = $(this).data(CONCRETE);
     var lin = Grammar.concretes[lang].linearise(tree);
-    var words = map_images_and_spacing(mapwords(lin));
-    for (var i = 0; i < words.length; i++) {
-      var wordelem = $('<span class="word clickable">').html(words[i]).data('nr', i).data('lang', lang).data('path', lin[i].path).click(click_word).appendTo($('#' + lang));
-    }
+    var sentence = map_words_and_spacing(mapwords(lin), lang, function(i, content) {
+      return $('<span class="word clickable">').html(content).data('nr', i).data('lang', lang).data('path', lin[i].path).click(click_word);
+    });
+    $('#' + lang).empty().append(sentence);
   });
 }
-function map_images_and_spacing(words) {
-  var newwords = [];
+function GetHTMLWordDefault(words, callback) {
+  var sentence = $('<div>');
   for (var i = 0; i < words.length; i++) {
-    var word = words[i];
-    var img = get_image(word);
-    if (img) {
-      word = '<img src="' + img + '">';
-    }
-    if (word == BIND) {
-      newwords[i] = "";
-      continue;
-    }
+    var previous = words[i - 1], word = words[i], next = words[i + 1];
+    if (word == BIND) continue;
     var prefix = "&nbsp;", suffix = "&nbsp;";
-    var prev = words[i - 1], next = words[i + 1];
-    if (prev == BIND || prev == '¿' || prev == '¡' || word == '.' || word == '?' || word == '!') {
-      prefix = "";
-    }
-    if (next == BIND || word == '¿' || word == '¡' || next == '.' || next == '?' || next == '!') {
-      suffix = "";
-    }
-    newwords[i] = prefix + word + suffix;
+    if (previous == BIND || previous == '¿' || previous == '¡' || word == '.' || word == '?' || word == '!') prefix = "";
+    if (next == BIND || word == '¿' || word == '¡' || next == '.' || next == '?' || next == '!') suffix = "";
+    sentence.append(callback(i, prefix + word + suffix));
   }
-  return newwords;
+  return sentence;
 }
-function get_image(word) {
-  if (typeof (word) == "string" && word.slice(- 4) == '.png') return ImagePath + word;
+function GetBlissWord(words, callback) {
+  var sentence = $('<div>');
+  var prefix, suffix;
+  var indicator_elem = $('<span class="indicator">');
+  var indicator_wdt = 0;
+  for (var i = 0; i < words.length; i++) {
+    var previous = words[i - 1], word = words[i], next = words[i + 1];
+    if (word == BIND) continue;
+    var prev_comb = startswith(previous, ">");
+    var next_comb = startswith(next, ">");
+    var combining = startswith(word, ">");
+    if (combining) word = word.slice(1);
+    var img = $('<img>').attr('src', IMAGES[word]).attr('alt', word).attr('title', word);
+    var wdt = WIDTHS[word];
+    console.log(word, IMAGES[word], WIDTHS[word]);
+    if (combining) {
+      if (!indicator_elem) {
+        var indicator_elem = $('<span class="indicator">');
+      }
+      indicator_elem.append(callback(i, img));
+      indicator_wdt += wdt;
+    } else {
+      if (previous != BIND) sentence.append($('<span style="background-color:cyan">').html('&nbsp;&nbsp;&nbsp;'));
+      var left = (wdt - indicator_wdt) / 2;
+      indicator_elem.attr('style', 'left:' + left);
+      $('<span class="symbol">').append(indicator_elem).append(callback(i, img)).appendTo(sentence);
+      if (next != BIND && next != "question_mark" && next != "exclamation_mark") sentence.append($('<span style="background-color:yellow">').html('&nbsp;&nbsp;&nbsp;'));
+      indicator_elem = $('<span class="indicator">');
+      indicator_wdt = 0;
+    }
+  }
+  return sentence;
+}
+var GetHTMLWord = {'PhrasebookZbl': GetBlissWord};
+function map_words_and_spacing(words, lang, callback) {
+  var get_htmlword = GetHTMLWordDefault;
+  if (typeof GetHTMLWord == "object" && lang in GetHTMLWord) get_htmlword = GetHTMLWord[lang];
+  return get_htmlword(words, callback);
 }
 function clear_selection() {
   $('.word').removeClass(HIGHLIGHTED).removeClass(STRIKED);
@@ -147,8 +172,8 @@ function click_word(event) {
       $(this).addClass(HIGHLIGHTED);
     }
   });
-  for (var $__2 = $traceurRuntime.getIterator(menu), $__3; !($__3 = $__2.next()).done;) {
-    var item = $__3.value;
+  for (var $__1 = $traceurRuntime.getIterator(menu), $__0; !($__0 = $__1.next()).done;) {
+    var item = $__0.value;
     {
       var menuitem = $('<span class="clickable">').data('tree', item.tree).click(function() {
         select_tree($(this).data('tree'));
@@ -157,13 +182,9 @@ function click_word(event) {
         menuitem.append($('<span>').html("&empty;"));
       } else {
         var words = mapwords(item.lin.slice(item.sleft, item.sright + 1));
-        words = map_images_and_spacing(words);
-        for (var $__1 = $traceurRuntime.getIterator(words), $__0; !($__0 = $__1.next()).done;) {
-          var w = $__0.value;
-          {
-            menuitem.append($('<span>').html(w));
-          }
-        }
+        map_words_and_spacing(words, lang, function(i, content) {
+          return $('<span>').html(content);
+        }).appendTo(menuitem);
       }
       $('<li>').append(menuitem).appendTo($('#menu'));
     }

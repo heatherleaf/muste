@@ -9,7 +9,7 @@ var STRIKED = 'striked';
 var INACTIVE = 'inactive';
 var HIGHLIGHTED = 'highlighted';
 
-var BIND = "&+";
+var NOSPACING = "&+";
 
 $(function() {
     initialize_grammar();
@@ -49,8 +49,9 @@ function initialize_grammar() {
         $('<p id="' + lang + '">')
             .appendTo($('#sentences'));
     }
-    // Only the first 4 languages are shown by default:
-    $('.language').slice(4).addClass(INACTIVE); 
+    // Only the first 3 languages are shown by default, and not the abstract:
+    $('.language').slice(3).addClass(INACTIVE); 
+    $('.language').last().addClass(INACTIVE);
     showhide_languages();
 
     select_tree(parseGFTree(InitialTree));
@@ -95,53 +96,77 @@ function set_and_show_tree(tree) {
     $('.language').each(function(){
         var lang = $(this).data(CONCRETE);
         var lin = Grammar.concretes[lang].linearise(tree);
-        var words = map_images_and_spacing(mapwords(lin));
-        for (var i = 0; i < words.length; i++) {
-            var wordelem = $('<span class="word clickable">')
-                .html(words[i])
+        var sentence = map_words_and_spacing(lang, mapwords(lin), function(i, content){
+            return $('<span class="word clickable">')
+                .html(content)
                 .data('nr', i)
                 .data('lang', lang)
                 .data('path', lin[i].path)
-                .click(click_word)
-                .appendTo($('#' + lang));
-        }
+                .click(click_word);
+        });
+        $('#' + lang).empty().append(sentence);
     });
 }
 
-function map_images_and_spacing(words) {
-    var newwords = [];
+function map_words_to_html(words, callback) {
+    var sentence = $('<div>');
     for (var i = 0; i < words.length; i++) {
-        var word = words[i];
-        var img = get_image(word);
-        if (img) {
-            word = '<img src="' + img + '">';
-        }
-        // handling the special token BIND, and spacing before/after punctuation
-        if (word == BIND) { 
-            newwords[i] = "";
-            continue;
-        } 
+        var previous = words[i-1], word = words[i], next = words[i+1];
+        if (word == NOSPACING) continue;
+
         var prefix = "&nbsp;", suffix = "&nbsp;";
-        var prev = words[i-1], next = words[i+1];
-        if (prev == BIND || prev == '¿' || prev == '¡' ||
-            word == '.' || word == '?' || word == '!') {
+        if (previous == NOSPACING || previous == '¿' || previous == '¡' || word == '.' || word == '?' || word == '!') 
             prefix = "";
-        } 
-        if (next == BIND || word == '¿' || word == '¡' ||
-            next == '.' || next == '?' ||  next == '!') {
+        if (next == NOSPACING || word == '¿' || word == '¡' || next == '.' || next == '?' ||  next == '!') 
             suffix = "";
-        }
-        newwords[i] = prefix + word + suffix;
+
+        sentence.append(callback(i, prefix+word+suffix))
     }
-    return newwords;
+    return sentence;
 }
 
-function get_image(word) {
-    if (typeof(word) == "string" && word.slice(-4) == '.png')
-        return ImagePath + word;
+
+function map_words_to_images(metadata, words, callback) {
+    var sentence = $('<div>');
+    var prefix, suffix;
+    var indicator_elem = $('<span class="indicator">');
+    var indicator_wdt = 0;
+    for (var i = 0; i < words.length; i++) {
+        var previous = words[i-1], word = words[i], next = words[i+1];
+        if (word == NOSPACING) continue;
+
+        var img = $('<img>').attr('src', metadata['images'][word]).attr('alt', word).attr('title', word);
+        var wdt = metadata['widths'][word];
+
+        if (word in metadata['indicators']) {
+            if (!indicator_elem) {
+                var indicator_elem = $('<span class="indicator">');
+            }
+            indicator_elem.append(callback(i, img));
+            indicator_wdt += wdt;
+        } else {
+            if (previous != NOSPACING)
+                sentence.append($('<span class="leftspace">').html('&nbsp;&nbsp;&nbsp;'));
+            var left = (wdt - indicator_wdt) / 2;
+            indicator_elem.attr('style', 'left:' + left);
+            $('<span class="symbol">').append(indicator_elem).append(callback(i, img)).appendTo(sentence);
+            if (next != NOSPACING && next != "question_mark" && next != "exclamation_mark")
+                sentence.append($('<span class="rightspace">').html('&nbsp;&nbsp;&nbsp;'));
+            indicator_elem = $('<span class="indicator">');
+            indicator_wdt = 0;
+        }
+
+    }
+    return sentence;
 }
-// we need to define where images can be found, e.g.:
-// var ImagePath = 'bliss_h78_transp_png/';
+
+function map_words_and_spacing(lang, words, callback) {
+    if (typeof MapWordsToHTML == "object" && lang in MapWordsToHTML) {
+        return MapWordsToHTML[lang](Metadata[lang], words, callback);
+    } else {
+        return map_words_to_html(words, callback);
+    }
+}
 
 function clear_selection() {
     $('.word').removeClass(HIGHLIGHTED).removeClass(STRIKED);
@@ -190,16 +215,14 @@ function click_word(event) {
             menuitem.append($('<span>').html("&empty;")); // &ndash;
         } else {
             var words = mapwords(item.lin.slice(item.sleft, item.sright+1));
-            words = map_images_and_spacing(words);
-            for (var w of words) {
-                // if (!w) w = "&empty;"; // &ndash;
-                // if (w == '...') w = "&hellip;";
-                menuitem.append($('<span>').html(w));
-            }
+            map_words_and_spacing(lang, words, function(i, content){
+                return $('<span>').html(content);
+            }).appendTo(menuitem);
+
         }
         $('<li>').append(menuitem).appendTo($('#menu'));
     }
-    var pos = clicked.position();
+    var pos = clicked.offset();
     var xadd = (clicked.outerWidth() - $('#menu').outerWidth()) / 2;
     var yadd = clicked.outerHeight() * 2/3;
     $('#menu').css({

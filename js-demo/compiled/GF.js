@@ -174,7 +174,7 @@ function _expand_tokens(lin) {
 function _linearise_nondet(concrete, tree, path) {
   var $that = this;
   var $arguments = arguments;
-  var $state = 35;
+  var $state = 38;
   var $storedException;
   var $finallyFallThrough;
   var $__0;
@@ -192,6 +192,7 @@ function _linearise_nondet(concrete, tree, path) {
   var arg;
   var arity;
   var cat;
+  var cats;
   var children;
   var childtype;
   var fcs;
@@ -208,12 +209,12 @@ function _linearise_nondet(concrete, tree, path) {
     yieldReturn: undefined,
     innerFunction: function($yieldSent, $yieldAction) {
       while (true) switch ($state) {
-        case 35:
-          if (tree instanceof Array) {
+        case 38:
+          if (tree instanceof Array && concrete.linfuns[tree[0]]) {
             $state = 16;
             break;
           } else {
-            $state = 34;
+            $state = 32;
             break;
           }
         case 16:
@@ -299,20 +300,25 @@ function _linearise_nondet(concrete, tree, path) {
           }
           $state = 3;
           break;
-        case 34:
-          if (startswith(tree, "?")) {
-            $state = 32;
-            break;
-          } else {
-            $state = 15;
-            break;
-          }
         case 32:
-          childtype = tree.slice(1);
+          ;
           $state = 33;
           break;
         case 33:
-          $__10 = $traceurRuntime.getIterator(concrete.categories[childtype]);
+          if (tree instanceof Array) {
+            childtype = concrete.abstract.types[tree[0]].abscat;
+            tree = strTree(tree[0]);
+          } else if (startswith(tree, "?")) {
+            childtype = tree.slice(1);
+          }
+          $state = 35;
+          break;
+        case 35:
+          cats = concrete.categories[childtype] || ["?"];
+          $state = 37;
+          break;
+        case 37:
+          $__10 = $traceurRuntime.getIterator(cats);
           $state = 21;
           break;
         case 21:
@@ -328,7 +334,7 @@ function _linearise_nondet(concrete, tree, path) {
           $state = 29;
           break;
         case 29:
-          arity = concrete.lincats[cat];
+          arity = concrete.lincats[cat] || concrete.max_arity;
           $state = 23;
           break;
         case 23:
@@ -338,8 +344,8 @@ function _linearise_nondet(concrete, tree, path) {
         case 25:
           for (k = 0; k < arity; k++) {
             lin.push([{
-              'word': "[" + tree + "]",
-              'path': path + i
+              'arg': {'tokens': ["[" + tree + "]"]},
+              'path': path
             }]);
           }
           $state = 27;
@@ -528,7 +534,7 @@ function _linearise_children_nondet(concrete, tree, i, path) {
 function _coerce_cats(concrete, cats, i) {
   var $that = this;
   var $arguments = arguments;
-  var $state = 16;
+  var $state = 18;
   var $storedException;
   var $finallyFallThrough;
   var $__6;
@@ -537,18 +543,19 @@ function _coerce_cats(concrete, cats, i) {
   var $__9;
   var cocat;
   var cocats;
+  var cocats_rest;
   var $G = {
     GState: 0,
     current: undefined,
     yieldReturn: undefined,
     innerFunction: function($yieldSent, $yieldAction) {
       while (true) switch ($state) {
-        case 16:
+        case 18:
           if (i >= cats.length) {
             $state = 0;
             break;
           } else {
-            $state = 14;
+            $state = 16;
             break;
           }
         case 0:
@@ -562,8 +569,12 @@ function _coerce_cats(concrete, cats, i) {
           }
           $state = 3;
           break;
-        case 14:
-          $__8 = $traceurRuntime.getIterator(concrete.coercions[cats[i]]);
+        case 16:
+          cocats = concrete.coercions[cats[i]] || [cats[i]];
+          $state = 17;
+          break;
+        case 17:
+          $__8 = $traceurRuntime.getIterator(cocats);
           $state = 11;
           break;
         case 11:
@@ -591,11 +602,11 @@ function _coerce_cats(concrete, cats, i) {
             break;
           }
         case 8:
-          cocats = $__7.value;
+          cocats_rest = $__7.value;
           $state = 9;
           break;
         case 9:
-          this.current = [cocat].concat(cocats);
+          this.current = [cocat].concat(cocats_rest);
           $state = 5;
           return true;
         case 5:
@@ -606,151 +617,6 @@ function _coerce_cats(concrete, cats, i) {
           $state = 7;
           break;
         case 3:
-          $state = -2;
-        case -2:
-          return false;
-        case -3:
-          throw $storedException;
-        default:
-          throw "traceur compiler bug: invalid state in state machine: " + $state;
-      }
-    },
-    moveNext: function($yieldSent, $yieldAction) {
-      while (true) try {
-        return this.innerFunction($yieldSent, $yieldAction);
-      } catch ($caughtException) {
-        $storedException = $caughtException;
-        switch ($state) {
-          default:
-            this.GState = 3;
-            $state = -2;
-            throw $storedException;
-        }
-      }
-    }
-  };
-  return $__generatorWrap($G);
-}
-function _linearise_child_nondet(concrete, tree, i, path) {
-  var $that = this;
-  var $arguments = arguments;
-  var $state = 27;
-  var $storedException;
-  var $finallyFallThrough;
-  var $__6;
-  var $__7;
-  var $__8;
-  var $__9;
-  var arity;
-  var cat;
-  var child;
-  var childtype;
-  var k;
-  var lin;
-  var result;
-  var $G = {
-    GState: 0,
-    current: undefined,
-    yieldReturn: undefined,
-    innerFunction: function($yieldSent, $yieldAction) {
-      while (true) switch ($state) {
-        case 27:
-          child = tree[i];
-          $state = 28;
-          break;
-        case 28:
-          if (!child || startswith(child, "?")) {
-            $state = 14;
-            break;
-          } else {
-            $state = 24;
-            break;
-          }
-        case 14:
-          childtype = concrete.abstract.types[tree[0]].children[i - 1];
-          $state = 15;
-          break;
-        case 15:
-          if (!child) {
-            child = "?" + childtype;
-          }
-          $state = 17;
-          break;
-        case 17:
-          $__9 = $traceurRuntime.getIterator(concrete.categories[childtype]);
-          $state = 3;
-          break;
-        case 3:
-          if (!($__8 = $__9.next()).done) {
-            $state = 10;
-            break;
-          } else {
-            $state = 13;
-            break;
-          }
-        case 10:
-          cat = $__8.value;
-          $state = 11;
-          break;
-        case 11:
-          arity = concrete.lincats[cat];
-          $state = 5;
-          break;
-        case 5:
-          lin = [];
-          $state = 7;
-          break;
-        case 7:
-          for (k = 0; k < arity; k++) {
-            lin.push([{
-              'word': "[" + child + "]",
-              'path': path + i
-            }]);
-          }
-          $state = 9;
-          break;
-        case 9:
-          this.current = {
-            'cat': cat,
-            'lin': lin
-          };
-          $state = 1;
-          return true;
-        case 1:
-          if ($yieldAction == 1) {
-            $yieldAction = 0;
-            throw $yieldSent;
-          }
-          $state = 3;
-          break;
-        case 24:
-          $__7 = $traceurRuntime.getIterator(_linearise_nondet(concrete, tree[i], path + i));
-          $state = 21;
-          break;
-        case 21:
-          if (!($__6 = $__7.next()).done) {
-            $state = 22;
-            break;
-          } else {
-            $state = 13;
-            break;
-          }
-        case 22:
-          result = $__6.value;
-          $state = 23;
-          break;
-        case 23:
-          this.current = result;
-          $state = 19;
-          return true;
-        case 19:
-          if ($yieldAction == 1) {
-            $yieldAction = 0;
-            throw $yieldSent;
-          }
-          $state = 21;
-          break;
-        case 13:
           $state = -2;
         case -2:
           return false;

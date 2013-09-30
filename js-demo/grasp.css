@@ -67,3 +67,14 @@ body {
 img {
     vertical-align: middle;
 }
+
+.symbol { position: relative; display: inline-block }
+.indicator { position: absolute; left: 0; top: 0 }
+
+/* used for debugging purposes:
+.indicator { background-color:rgba(255,255,0,0.4) }
+.symbol { background-color:rgba(255,0,255,0.2) }
+.leftspace { background-color: #fff }
+.rightspace { background-color: #ddd }
+img { border: 1px dotted blue }
+*/
