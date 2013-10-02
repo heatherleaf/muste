@@ -14,7 +14,8 @@ $(function() {
     $('.word').removeClass(HIGHLIGHTED).removeClass(STRIKED);
     $('#menu').empty().hide();
   });
-  $('#firefox-only').hide();
+  $('#unsupported-browser').remove();
+  $('#internal-error').remove();
 });
 function initialize_grammar() {
   var fun2typing = Grammar.abstract.types;
@@ -119,11 +120,11 @@ function map_words_to_images(metadata, words, callback) {
       indicator_elem.append(callback(i, img));
       indicator_wdt += wdt;
     } else {
-      if (previous != NOSPACING) sentence.append($('<span class="leftspace">').html('&nbsp;&nbsp;&nbsp;'));
+      if (previous != NOSPACING) sentence.append($('<span class="leftspace">').html('&nbsp;&nbsp;'));
       var left = (wdt - indicator_wdt) / 2;
       indicator_elem.attr('style', 'left:' + left);
       $('<span class="symbol">').append(indicator_elem).append(callback(i, img)).appendTo(sentence);
-      if (next != NOSPACING && next != "question_mark" && next != "exclamation_mark") sentence.append($('<span class="rightspace">').html('&nbsp;&nbsp;&nbsp;'));
+      if (next != NOSPACING && next != "question_mark" && next != "exclamation_mark") sentence.append($('<span class="rightspace">').html('&nbsp;&nbsp;'));
       indicator_elem = $('<span class="indicator">');
       indicator_wdt = 0;
     }

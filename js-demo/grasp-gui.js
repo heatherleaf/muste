@@ -18,7 +18,8 @@ $(function() {
         $('.word').removeClass(HIGHLIGHTED).removeClass(STRIKED);
         $('#menu').empty().hide();
     });
-    $('#firefox-only').hide();
+    $('#unsupported-browser').remove();
+    $('#internal-error').remove();
 });
 
 function initialize_grammar() {
