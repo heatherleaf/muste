@@ -136,8 +136,10 @@ function map_words_to_images(metadata, words, callback) {
         var previous = words[i-1], word = words[i], next = words[i+1];
         if (word == NOSPACING) continue;
 
-        var img = $('<img>').attr('src', metadata['images'][word]).attr('alt', word).attr('title', word);
-        var wdt = metadata['widths'][word];
+        var imgsrc = metadata['images'][word];
+        var img = (imgsrc ? $('<img>').attr('src', imgsrc).attr('alt', word).attr('title', word) 
+                   : $('<span>').attr('title', word).text(word));
+        var wdt = metadata['widths'][word] || 40; // default width
 
         if (word in metadata['indicators']) {
             if (!indicator_elem) {
