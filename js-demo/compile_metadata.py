@@ -4,17 +4,12 @@ import glob
 import os.path
 import PIL.Image
 
-GLOB = "blissimages/*.png"
+GLOB = "../../img/bliss_h78_png/*.png"
 METANAME = 'BlissMetadata'
 
 def width(fname):
     img = PIL.Image.open(fname)
     return img.size[0]
-
-def allsyms():
-    syms = glob.glob("%s/*.png" % (IMG_DIR,))
-    syms = syms[::10]
-    return [(basename(fname), fname, width(fname)) for fname in syms]
 
 def basename(fname):
     return os.path.splitext(os.path.split(fname)[1])[0]
