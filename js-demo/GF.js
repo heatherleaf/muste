@@ -6,6 +6,7 @@
 
 META = "?";
 
+
 function GFGrammar(abstract, concretes) {
     this.abstract = abstract;
     this.concretes = concretes;
@@ -13,6 +14,7 @@ function GFGrammar(abstract, concretes) {
         this.concretes[cnc].abstract = abstract;
     }
 }
+
 
 function GFAbstract(startcat, types) {
     this.startcat = startcat;
@@ -26,6 +28,7 @@ function GFAbstract(startcat, types) {
         this.cat2funs[cat].push(fun);
     }
 }
+
 
 function GFConcrete(flags, productions, functions, sequences, categories, nr_cats) {
     this.abstract = undefined;
@@ -87,6 +90,7 @@ function GFConcrete(flags, productions, functions, sequences, categories, nr_cat
     }
 }
 
+
 //////////////////////////////////////////////////////////////////////
 // Type checking
 
@@ -113,6 +117,7 @@ GFAbstract.prototype.typecheck = function(tree, ntype) {
     for (var i = 1; i < tree.length; i++) 
         this.typecheck(tree.children[i], ftype.children[i-1]);
 }
+
 
 //////////////////////////////////////////////////////////////////////
 // Random generation
@@ -149,6 +154,7 @@ GFAbstract.prototype.generate = function(cat, maxdepth, maxtries, filter) {
     return null;
 }
 
+
 //////////////////////////////////////////////////////////////////////
 // GF linearisations
 
@@ -163,6 +169,7 @@ GFGrammar.prototype.linearise = function(language, tree) {
     return this.concretes[language].linearise(tree);
 }
 
+
 /** GFConcrete.linearise(tree):
     @param tree: a GFTree instance
     @return: an Array of {word:String, path:String} 
@@ -173,6 +180,7 @@ GFConcrete.prototype.linearise = function (tree) {
         return _expand_tokens(catlins[0].lin[0]);
     }
 }
+
 
 function _expand_tokens(lin) {
     if (!(lin instanceof Array)) {
@@ -218,6 +226,7 @@ function _expand_tokens(lin) {
         });
     }
 }
+
 
 function _linearise_nondet(concrete, tree, path) {
     var result = [];
@@ -275,6 +284,7 @@ function _linearise_nondet(concrete, tree, path) {
     return result;
 }
 
+
 function _linearise_children_nondet(concrete, tree, i, path) {
     var result = [];
     if (i >= tree.length) {
@@ -299,6 +309,7 @@ function _linearise_children_nondet(concrete, tree, i, path) {
     return result;
 }
 
+
 function _coerce_cats(concrete, cats, i) {
     var result = [];
     if (i >= cats.length) {
@@ -314,6 +325,7 @@ function _coerce_cats(concrete, cats, i) {
     }
     return result;
 }
+
 
 /** strLin(lin, ?focuspath, ?prefix, ?suffix)
     @param lin: a linearisation as returned by GFConcrete.linearise()
@@ -350,6 +362,7 @@ function GFTree(node, children) {
     }
 }
 
+
 /** strTree(tree, ?focuspath, ?prefix, ?suffix)
     @param tree: a GF tree
     @param focuspath: the highlighted node (a string of digits)
@@ -377,6 +390,7 @@ function strTree(tree, focuspath, prefix, suffix) {
         return result;
 }
 
+
 /** copyTree(tree)
     @param tree: a GF tree
     @return: a deep copy of the tree
@@ -388,6 +402,7 @@ function copyTree(tree) {
         return tree;
     }
 }
+
 
 /** getSubtree(tree, path)
     @param tree: a GF tree
@@ -404,6 +419,7 @@ function getSubtree(tree, path) {
     }
     return subtree;
 };
+
 
 /** updateSubtree(tree, path, update)
     @param tree: a GF tree
@@ -526,6 +542,7 @@ function productlist(pools) {
     return results;
 }
 
+
 /** setdefault(dict, key, defval): lookup key in dict, and set it to defval if not there
     @param dict: an Object
     @param key: the String key
@@ -537,6 +554,7 @@ function setdefault(dict, key, defval) {
         dict[key] = defval;
     return dict[key];
 }
+
 
 /** foreach(sequence, fun): apply fun to each value in sequence
     @param sequence: a sequence - an Array or a String
@@ -550,6 +568,7 @@ function foreach(sequence, fun) {
     }
 }
 
+
 /** startswith(string, prefix)
     @param string, prefix: Strings
     @return: True if string starts with prefix
@@ -559,6 +578,7 @@ function startswith(str, prefix) {
         return str.slice(0, prefix.length) == prefix;
 }
 
+
 function commonPrefix(s1, s2) {
     var len = Math.min(s1.length, s2.length);
     for (var i=0; i < len; i++) {
@@ -567,6 +587,7 @@ function commonPrefix(s1, s2) {
     }
     return s1.slice(0,len);
 }
+
 
 //////////////////////////////////////////////////////////////////////
 // functions for creating GF grammars from auto-generated javascript

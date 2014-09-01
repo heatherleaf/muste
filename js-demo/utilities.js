@@ -24,6 +24,7 @@ function array_cmp(a, b) {
     }
 }
 
+
 function array_eq(a, b) {
     if (a instanceof Array) {
         if (b instanceof Array) {
@@ -44,6 +45,7 @@ function array_eq(a, b) {
     }
 }
 
+
 function flatten(obj) {
     if (obj instanceof Array) {
         var list = [];
@@ -55,6 +57,7 @@ function flatten(obj) {
         return [obj];
     }
 }
+
 
 function common_prefix(sequences) {
     if (!sequences.length) {
@@ -72,44 +75,55 @@ function common_prefix(sequences) {
     return sequences[0].slice(0, minlen);
 }
 
+
 // Converting a list of strings into a string, so that the original list can be retrieved
 
 function ishash(hash) {
     return (typeof(hash) == "string" && /^\{\[\"[0-9]/.test(hash));
 }
 
+
 function hash(args) {
     return JSON.stringify(args);
 }
+
 
 function unhash(hash) {
     return JSON.parse(hash);
 }
 
+
 // Timing
 
 var TIMERS = {};
+
 function RESET_TIMERS() {
     TIMERS = {};
 }
+
 function START_TIMER(n) {
     if (!TIMERS[n]) TIMERS[n] = 0;
     TIMERS[n] -= Date.now();
 }
+
 function STOP_TIMER(n) {
     TIMERS[n] += Date.now();
 }
+
 function LOG_TIMERS() {
     console.log("TIMERS", JSON.stringify(TIMERS));
 }
+
 
 function getTime() {
     return Date.now();
 }
 
+
 function showTime(start) {
     return (getTime() - start).toFixed(1) + " ms";
 }
+
 
 // Pretty-printing
 
@@ -133,6 +147,7 @@ function strObject(obj) {
 	    return "" + obj;
     }
 }
+
 
 // Error handling
 
