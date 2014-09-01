@@ -49,9 +49,23 @@ function unhash(hash) {
 
 // Timing
 
+var TIMERS = {};
+function RESET_TIMERS() {
+    TIMERS = {};
+}
+function START_TIMER(n) {
+    if (!TIMERS[n]) TIMERS[n] = 0;
+    TIMERS[n] -= Date.now();
+}
+function STOP_TIMER(n) {
+    TIMERS[n] += Date.now();
+}
+function LOG_TIMERS() {
+    console.log("TIMERS", JSON.stringify(TIMERS));
+}
+
 function getTime() {
     return Date.now();
-    // performance.now();
 }
 
 function showTime(start) {
