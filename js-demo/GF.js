@@ -18,6 +18,13 @@ function GFAbstract(startcat, types) {
     this.startcat = startcat;
     // this.types = {fname: new Type([cat, ...], cat), ...}
     this.types = types;
+    // this.cat2funs = {cat: [fname]}
+    this.cat2funs = {};
+    for (var fun in types) {
+        var cat = types[fun].abscat;
+        if (!this.cat2funs[cat]) this.cat2funs[cat] = [];
+        this.cat2funs[cat].push(fun);
+    }
 }
 
 function GFConcrete(flags, productions, functions, sequences, categories, nr_cats) {
@@ -161,8 +168,9 @@ GFGrammar.prototype.linearise = function(language, tree) {
     @return: an Array of {word:String, path:String} 
 **/
 GFConcrete.prototype.linearise = function (tree) {
-    for (var catlin of _linearise_nondet(this, tree, "")) {
-        return _expand_tokens(catlin.lin[0]);
+    var catlins = _linearise_nondet(this, tree, "");
+    if (catlins.length > 0) {
+        return _expand_tokens(catlins[0].lin[0]);
     }
 }
 
@@ -176,20 +184,31 @@ function _expand_tokens(lin) {
         for (var i = lin.length-1; i >= 0; i--) {
             var path = lin[i].path;
             var arg = lin[i].arg;
-            var tokens = arg.tokens;
-            if (arg.alts && newlin.length) {
-                altloop:
-                for (var alt of arg.alts) {
-                    for (var prefix of alt.follows) {
-                        if (startswith(newlin[0].word, prefix)) {
-                            tokens = alt.tokens;
-                            break altloop;
+            if (!arg.alts) {
+                for (var j = arg.tokens.length-1; j >= 0; j--) {
+                    newlin.push({'word':arg.tokens[j], 'path':path});
+                }
+            } else {
+                var tokens = arg.tokens;
+                if (newlin.length) {
+                    altloop:
+                    for (var altix = 0; altix < arg.alts.length; altix++) {
+                        var alt = arg.alts[altix];
+                        for (var followix = 0; followix < alt.follows.length; followix++) {
+                            var prefix = alt.follows[followix];
+                            if (startswith(newlin[0].word, prefix)) {
+                                tokens = alt.tokens;
+                                break altloop;
+                            }
                         }
                     }
                 }
-            }
-            for (var j = tokens.length-1; j >= 0; j--) {
-                newlin.push({'word':tokens[j], 'path':path});
+                for (var j = tokens.length-1; j >= 0; j--) {
+                    var toks = tokens[j].tokens;
+                    for (var k = 0; k < toks.length; k++) {
+                        newlin.push({'word':toks[k], 'path':path});
+                    }
+                }
             }
         }
         return newlin.reverse();
@@ -201,26 +220,37 @@ function _expand_tokens(lin) {
 }
 
 function _linearise_nondet(concrete, tree, path) {
+    var result = [];
     if (tree instanceof Array && concrete.linfuns[tree[0]]) {
         var linfuns = concrete.linfuns[tree[0]];
-        for (var children of _linearise_children_nondet(concrete, tree, 1, path)) {
-            for (var fcs of linfuns[children.cats] || []) {
-                var lin = [];
-                for (var seqnr of fcs.seqs) {
-                    var phrase = [];
-                    var seq = concrete.sequences[seqnr];
-                    for (var arg of seq) {
-                        if (arg instanceof SymCat) {
-                            for (var token of children.lins[arg.arg][arg.param]) {
-                                phrase.push(token);
+        var allchildren = _linearise_children_nondet(concrete, tree, 1, path);
+        for (var childrenix = 0; childrenix < allchildren.length; childrenix++) {
+            var children = allchildren[childrenix];
+            var allfcs = linfuns[children.cats];
+            if (allfcs && allfcs.length > 0) {
+                for (var fcsix = 0; fcsix < allfcs.length; fcsix++) {
+                    var fcs = allfcs[fcsix];
+                    var lin = [];
+                    for (var seqix = 0; seqix < fcs.seqs.length; seqix++) {
+                        var seqnr = fcs.seqs[seqix];
+                        var phrase = [];
+                        var seq = concrete.sequences[seqnr];
+                        for (var argix = 0; argix < seq.length; argix++) {
+                            var arg = seq[argix];
+                            if (arg instanceof SymCat) {
+                                var alltokens = children.lins[arg.arg][arg.param];
+                                for (var tokix = 0; tokix < alltokens.length; tokix++) {
+                                    var token = alltokens[tokix];
+                                    phrase.push(token);
+                                }
+                            } else {
+                                phrase.push({'arg':arg, 'path':path});
                             }
-                        } else {
-                            phrase.push({'arg':arg, 'path':path});
                         }
+                        lin.push(phrase);
                     }
-                    lin.push(phrase);
+                    result.push({'cat':fcs.cat, 'lin':lin});
                 }
-                yield {'cat':fcs.cat, 'lin':lin}
             }
         }
     } else {
@@ -228,48 +258,61 @@ function _linearise_nondet(concrete, tree, path) {
         if (tree instanceof Array) {
             childtype = concrete.abstract.types[tree[0]].abscat;
             tree = strTree(tree[0]);
-        } else if (startswith(tree, "?")) {
+        } else if (startswith(tree, META) && tree.length > 1) {
             childtype = tree.slice(1);
         }
-        var cats = concrete.categories[childtype] || ["?"];
-        for (var cat of cats) {
+        var cats = concrete.categories[childtype];
+        for (var catix = 0; catix < cats.length; catix++) {
+            var cat = cats[catix];
             var arity = concrete.lincats[cat] || concrete.max_arity;
             var lin = [];
-            for (var k=0; k<arity; k++) {
+            for (var k = 0; k < arity; k++) {
                 lin.push([{'arg': {'tokens':["["+tree+"]"]}, 'path': path}]);
             }
-            yield {'cat':cat, 'lin':lin};
+            result.push({'cat':cat, 'lin':lin});
         }
     }
+    return result;
 }
 
 function _linearise_children_nondet(concrete, tree, i, path) {
+    var result = [];
     if (i >= tree.length) {
-        yield {'cats':[], 'lins':[]};
+        result.push({'cats':[], 'lins':[]});
     } else {
-        for (var child of _linearise_nondet(concrete, tree[i], path + i)) {
-            for (var children of _linearise_children_nondet(concrete, tree, i+1, path)) {
+        var allchild = _linearise_nondet(concrete, tree[i], path + i);
+        var allchildren = _linearise_children_nondet(concrete, tree, i+1, path);
+        for (var childix = 0; childix < allchild.length; childix++) {
+            var child = allchild[childix];
+            for (var childrenix = 0; childrenix < allchildren.length; childrenix++) {
+                var children = allchildren[childrenix];
                 var lins = [child.lin].concat(children.lins);
                 var cats = [child.cat].concat(children.cats);
-                for (var cocats of _coerce_cats(concrete, cats, 0)) {
-                    yield {'cats':cocats, 'lins':lins};
+                var allcocats = _coerce_cats(concrete, cats, 0);
+                for (var cocatix = 0; cocatix < allcocats.length; cocatix++) {
+                    var cocats = allcocats[cocatix];
+                    result.push({'cats':cocats, 'lins':lins});
                 }
             }
         }
     }
+    return result;
 }
 
 function _coerce_cats(concrete, cats, i) {
+    var result = [];
     if (i >= cats.length) {
-        yield [];
+        result.push([]);
     } else {
         var cocats = concrete.coercions[cats[i]] || [cats[i]];
-        for (var cocat of cocats) {
-            for (var cocats_rest of _coerce_cats(concrete, cats, i+1)) {
-                yield [cocat].concat(cocats_rest);
+        var cocats_rest = _coerce_cats(concrete, cats, i+1);
+        for (var cocatix = 0; cocatix < cocats.length; cocatix++) {
+            for (var restix = 0; restix < cocats_rest.length; restix++) {
+                result.push([cocats[cocatix]].concat(cocats_rest[restix]));
             }
         }
     }
+    return result;
 }
 
 /** strLin(lin, ?focuspath, ?prefix, ?suffix)
@@ -393,11 +436,11 @@ function updateCopy(tree, path, update) {
     function _updateSubtree(sub, i) {
         if (i >= plen) {
             return (update instanceof Function) ? update(sub) : update;
-    } else {
+        } else {
             var n = parseInt(path[i]);
             return sub.slice(0, n).concat([_updateSubtree(sub[n], i+1)]).concat(sub.slice(n+1));
+        }
     }
-}
     return _updateSubtree(tree, 0);
 }
 
