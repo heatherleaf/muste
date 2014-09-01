@@ -1,31 +1,34 @@
 
-GFDIR = grammar
 GFNAME = Grasp
 GFLANG = Eng Swe Ger
 
-.PHONY: help grammar clean
+INPUTDIR = grammars/grasp
+OUTPUTDIR = js/generated
+
+.PHONY: help clean grammar metadata
 
 help:
 	@echo "make clean: remove generated files"
-	@echo "make grammar.js: build grammar from GF sources"
-	@echo "make bliss-metadata.js: build metadata for Blissymbolics"
+	@echo "make grammar: build grammar from GF sources"
+	@echo "make metadata: build metadata for Blissymbolics"
 
 clean: 
-	rm -f grammar.js grammar.pgf* $(GFDIR)/*.gfo
+	rm -f $(OUTPUTDIR)/*.* $(INPUTDIR)/*.gfo
 
-grammar: grammar.js
+grammar: $(OUTPUTDIR)/grammar.js
 
-bliss-metadata.js:
-	python compile_metadata.py > $@
+metadata: $(OUTPUTDIR)/bliss-metadata.js
 
-GFFILES = $(wildcard $(GFDIR)/*.gf)
-GFBASES = $(GFLANG:%=$(GFDIR)/$(GFNAME)%.gf)
-GFMAKE = gf --make --optimize-pgf --name grammar --output-format 
+$(OUTPUTDIR)/bliss-metadata.js:
+	python tools/compile_metadata.py > $@
 
-grammar.js: $(GFFILES)
+GFFILES = $(wildcard $(INPUTDIR)/*.gf)
+GFBASES = $(GFLANG:%=$(INPUTDIR)/$(GFNAME)%.gf)
+GFMAKE = gf --make --optimize-pgf --name grammar --output-dir $(OUTPUTDIR) --output-format
+
+$(OUTPUTDIR)/grammar.js: $(GFFILES)
 	$(GFMAKE) js $(GFBASES)
 
-grammar.pgf.txt: $(GFFILES)
+$(OUTPUTDIR)/grammar.txt: $(GFFILES)
 	$(GFMAKE) pgf_pretty $(GFBASES)
-	mv grammar.txt $@
 
