@@ -32,19 +32,15 @@ function common_prefix(sequences) {
 // Converting a list of strings into a string, so that the original list can be retrieved
 
 function ishash(hash) {
-    return (typeof(hash) == "string" && hash[0] == "{" && hash[hash.length-1] == "}");
+    return (typeof(hash) == "string" && /^\{\[\"[0-9]/.test(hash));
 }
 
 function hash(args) {
-    return "{" + args.join(":") + "}";
+    return JSON.stringify(args);
 }
 
 function unhash(hash) {
-    if (hash.length <= 2) {
-        return [];
-    } else {
-        return hash.slice(1, hash.length-1).split(":");
-    }
+    return JSON.parse(hash);
 }
 
 // Timing
