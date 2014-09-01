@@ -4,6 +4,7 @@
    This file must be loaded BEFORE the GF grammar is loaded!
 */
 
+META = "?";
 
 function GFGrammar(abstract, concretes) {
     this.abstract = abstract;
@@ -288,7 +289,7 @@ function strTree(tree, focuspath, prefix, suffix) {
         });
         result = "(" + result.join(" ") + ")";
     } else if (tree == null) {
-        result = "?";
+        result = META;
     } else {
         result = "" + tree;
     }
@@ -333,10 +334,8 @@ function getSubtree(tree, path) {
     -- or a tree which should replace the existing subtree
 **/
 function updateSubtree(tree, path, update) {
-    // do {
     var n = path[path.length-1];
     path = path.slice(0, -1);
-    // } while (n === NODELEAF);
     var parent = getSubtree(tree, path);
     if (update instanceof Function) {
         parent[n] = update(parent[n]);
@@ -345,6 +344,7 @@ function updateSubtree(tree, path, update) {
     }
 }
 
+
 /** updateCopy(tree, path, update)
     @param tree: a GF tree
     @param path: node reference (a string of digits)
@@ -352,17 +352,20 @@ function updateSubtree(tree, path, update) {
     -- or a tree which should replace the existing subtree
     @return: an updated copy of the tree - the original tree is left unchanged
 **/
+
 function updateCopy(tree, path, update) {
-    if (path.length > 0) {
-        var newtree = copyTree(tree);
-        updateSubtree(newtree, path, update);
-        return newtree;
-    } else if (update instanceof Function) {
-        return update(parent[n]);
+    var plen = path.length;
+    function _updateSubtree(sub, i) {
+        if (i >= plen) {
+            return (update instanceof Function) ? update(sub) : update;
     } else {
-        return update;
+            var n = parseInt(path[i]);
+            return sub.slice(0, n).concat([_updateSubtree(sub[n], i+1)]).concat(sub.slice(n+1));
     }
 }
+    return _updateSubtree(tree, 0);
+}
+
 
 /** parseFocusedGFTree(descr)
     @param descr: a string representing the tree
@@ -406,6 +409,10 @@ function parseFocusedGFTree(descr) {
                 var tree = stack.pop();
                 stack[stack.length-1].push(tree);
             }
+        } else if (/^\w+$/.test(token)) {
+            stack[stack.length-1].push(GFTree(token));
+        } else if (/^\?\w+$/.test(token)) {
+            stack[stack.length-1].push(token);
         } else {
             console.log("PARSE ERROR: Unknown token " + token + ": " + descr);
         }
