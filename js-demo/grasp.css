@@ -4,12 +4,13 @@ body {
     font-size: 20pt; 
     margin: 0; 
     padding: 0;
+    background-color: #eee;
 } 
 
 #languages {
     font-family: verdana, arial, sans-serif; 
     font-size: 75%; 
-    background-color: #eee;
+    background-color: white;
     border: 1px solid; 
     padding: 5px 1em; 
     margin: 1em;
@@ -24,18 +25,29 @@ body {
 }
 
 #sentences p {
+    background-color: white;
     margin: 1em 0;
     border-width: 1px; 
     border-style: solid none; 
     padding: 1ex; 
-    background-color: #eee;
+}
+
+#dummy {
+    margin: 1em;
+}
+
+.regenerate {
+    float: right;
+    margin: 0.5em;
 }
 
 #abstract {
-    font-size: 75%;
+    font-size: 50%;
 }
 
 #menu {
+    max-height: 10ex;
+    overflow: auto;
     display:none; 
     list-style: none; 
     padding: 0em 0.2em; 
@@ -44,6 +56,14 @@ body {
     position: absolute; 
     background-color: #ffa; 
     border-radius: 8px;
+}
+
+.matching {
+    background-color: #ddf;
+}
+
+.correct {
+    background-color: #cfc;
 }
 
 .highlighted, #languages span {
@@ -71,7 +91,7 @@ img {
 .symbol { position: relative; display: inline-block }
 .indicator { position: absolute; left: 0; top: 0 }
 
-/* used for debugging purposes:
+/* used for debugging images (such as Blissymbolics):
 .indicator { background-color:rgba(255,255,0,0.4) }
 .symbol { background-color:rgba(255,0,255,0.2) }
 .leftspace { background-color: #fff }
