@@ -108,6 +108,41 @@ GFAbstract.prototype.typecheck = function(tree, ntype) {
 }
 
 //////////////////////////////////////////////////////////////////////
+// Random generation
+
+GFAbstract.prototype.generate = function(cat, maxdepth, maxtries, filter) {
+    if (!maxdepth) maxdepth = 10;
+    if (!maxtries) maxtries = 1000;
+    var cat2funs = this.cat2funs;
+    var types = this.types;
+
+    function _generate(cat, maxdepth) {
+        if (maxdepth <= 0) return null;
+        var funs = cat2funs[cat];
+        if (typeof filter == "function") {
+            funs = funs.filter(filter);
+        }
+        if (!funs.length) return null;
+        var fun = funs[Math.floor(Math.random() * funs.length)];
+        if (startswith(fun, "default_")) return null;
+        var children = types[fun].children;
+        var tree = [fun];
+        for (var i = 0; i < children.length; i++) {
+            var child = _generate(children[i], maxdepth-1);
+            if (!child) return null;
+            tree.push(child);
+        }
+        return tree;
+    }
+
+    for (var i = 0; i < maxtries; i++) {
+        var result = _generate(cat, maxdepth);
+        if (result) return result;
+    }
+    return null;
+}
+
+//////////////////////////////////////////////////////////////////////
 // GF linearisations
 
 // var NODELEAF = ":"
