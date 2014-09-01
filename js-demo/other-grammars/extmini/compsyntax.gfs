@@ -1,0 +1,14 @@
+-- assumes start by: gf -run LangXXX.gf <compsyntax.gfs
+put_string "***Missing***"
+print_grammar -missing
+put_string "***Words***"
+print_grammar -words
+put_string "***Noun Phrases***"
+generate_random -number=20 -cat=NP | l -table -treebank
+put_string "***Clauses***"
+generate_random -number=10 -cat=Cl -depth=2 | l -table -treebank
+put_string "***Question Clauses***"
+generate_random -number=10 -cat=QCl -depth=2 | l -table -treebank
+import LangEng.gf
+put_string "***Utterances***"
+generate_random -number=100 | linearize -treebank
