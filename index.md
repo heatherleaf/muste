@@ -12,7 +12,7 @@ The underlying grammar formalism is GF, which has support for writing multlingua
 
 The theory behind GRASP is grammar- and language-independent, so the GRASP tool works for any GF grammar (even though some grammars are better suited than others). There is an online demonstration, purely written in Javascript here:
 
-> <grasp.html>
+> [grasp.html](grasp.html)
 
 The code is open-source and licensed under GPLv3.
 
