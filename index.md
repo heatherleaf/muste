@@ -14,7 +14,9 @@ The theory behind GRASP is grammar- and language-independent, so the GRASP tool 
 
 > [grasp.html](grasp.html)
 
-The code is open-source and licensed under GPLv3.
+The code is open-source and licensed under GPLv3, and is available at the Github project page:
+
+> <http://github.com/heatherleaf/grasp>
 
 
 <!-- ## Publications and presentations -->
