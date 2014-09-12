@@ -106,12 +106,22 @@ function START_TIMER(n) {
     TIMERS[n] -= Date.now();
 }
 
+function GET_TIMER(n) {
+    return TIMERS[n] + Date.now();
+}
+
 function STOP_TIMER(n) {
     TIMERS[n] += Date.now();
 }
 
 function LOG_TIMERS() {
-    console.log("TIMERS", JSON.stringify(TIMERS));
+    var out = [];
+    for (var key in TIMERS) {
+        out.push(key + ": " + Math.round(TIMERS[key]/100)/10)
+    }
+    out.sort();
+    console.log("TIMERS", out.join(", "));
+    // console.log("TIMERS", JSON.stringify(TIMERS));
 }
 
 
