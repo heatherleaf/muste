@@ -11,18 +11,15 @@ lin
 
   UseCl t p cl = Grammar.UseCl t p cl ;
   PredVP np vp = Grammar.PredVP np vp ;
-  ComplV2 v2 np = Grammar.ComplSlash (Grammar.SlashV2a v2) np ;
   DetCN det cn = Grammar.DetCN det cn ;
   ModCN ap cn = Grammar.AdjCN ap cn ;
 
-  CompAP ap = Grammar.UseComp (Grammar.CompAP ap) ;
   AdAP ada ap = Grammar.AdAP ada ap ;
 
   ConjS  co x y = Grammar.ConjS  co (Grammar.BaseS  x y) ;
   ConjAP co x y = Grammar.ConjAP co (Grammar.BaseAP x y) ;
   ConjNP co x y = Grammar.ConjNP co (Grammar.BaseNP x y) ;
 
-  UseV2 v = Grammar.UseV (lin V v) ;
   UseN n = Grammar.UseN n ;
   UseA a = Grammar.PositA a ;
   UsePron p = Grammar.UsePron p ;
@@ -55,21 +52,33 @@ lin
 
   SubjS s1 subj s2 = Grammar.SSubjS s1 subj s2 ;
 
-  CompAdv adv = Grammar.UseComp (Grammar.CompAdv adv) ;
   PrepNP prep np = Grammar.PrepNP prep np ;
 
   UseAdverb adv = lin Adv adv ;
 
-  ComplVS v s = Grammar.ComplVS v s ;
-  ComplVQ v q = Grammar.ComplVQ v q ;
-  ComplVV v vp = Grammar.ComplVV v vp ;
-
-  SlashV2 np v2 = Grammar.SlashVP np (Grammar.SlashV2a v2) ;
   SlashPrep cl prep = Grammar.SlashPrep cl prep ;
-
-  AdvVP vp adv = Grammar.AdvVP vp adv ;
 
   UsePN pn = Grammar.UsePN pn ;
   AdvNP np adv = Grammar.AdvNP np adv ;
+
+  -- changed how to create VP
+
+  SlashV np v = Grammar.SlashVP np (Grammar.SlashV2a (lin V2 v)) ;
+
+  UseV v = Grammar.UseV (lin V v) ;
+  UseVN v np = Grammar.ComplSlash (Grammar.SlashV2a (lin V2 v)) np ;
+  UseVA v ap = Grammar.ComplVA (lin VA v) ap ;
+  UseVNN v np1 np2 = Grammar.ComplSlash (Grammar.Slash3V3 (lin V3 v) np2) np1 ;
+  UseVNA v np ap = Grammar.ComplSlash (Grammar.SlashV2A (lin V2A v) ap) np ;
+
+  VerbVS v = v.v ;
+  VerbVQ v = v.v ;
+  VerbVV v = v.v ;
+
+  ComplVS v s = Grammar.ComplVS v.vs s ;
+  ComplVQ v q = Grammar.ComplVQ v.vq q ;
+  ComplVV v vp = Grammar.ComplVV v.vv vp ;
+
+  AdvVP vp adv = Grammar.AdvVP vp adv ;
 
 }

@@ -6,18 +6,15 @@ fun
 
   UseCl   : Temp -> Pol -> Cl -> S ;
   PredVP  : NP -> VP -> Cl ;
-  ComplV2 : V2 -> NP -> VP ;
   DetCN   : Det -> CN -> NP ;
   ModCN   : AP -> CN -> CN ;
 
-  CompAP  : AP -> VP ;
   AdAP    : AdA -> AP -> AP ;
 
   ConjS   : Conj -> S  -> S  -> S ;
   ConjAP  : Conj -> AP -> AP -> AP ;
   ConjNP  : Conj -> NP -> NP -> NP ;
 
-  UseV2   : V2 -> VP ;
   UseN    : N -> CN ;
   UseA    : A -> AP ;
   UsePron : Pron -> NP ;
@@ -44,21 +41,33 @@ fun
 
   SubjS : S -> Subj -> S -> S ;     -- she walks because we run
 
-  CompAdv : Adv -> VP ;         -- be here
   PrepNP  : Prep -> NP -> Adv ; -- in the house
 
   UseAdverb : Adverb -> Adv ; 
 
-  ComplVS : VS -> S  -> VP ;  -- know that she walks
-  ComplVQ : VQ -> QS -> VP ;  -- wonder who walks
-  ComplVV : VV -> VP -> VP ;  -- want to walk
-
-  SlashV2   : NP -> V2 -> ClSlash ;   -- she loves
   SlashPrep : Cl -> Prep -> ClSlash ; -- she walks with
-
-  AdvVP : VP -> Adv -> VP ; -- walk in the city
 
   UsePN : PN -> NP ;        -- John
   AdvNP : NP -> Adv -> NP ; -- the man in the city
+
+  -- changed how to create VP
+
+  SlashV : NP -> GraspV -> ClSlash ;   -- she loves
+
+  UseV   : GraspV -> VP ;
+  UseVN  : GraspV -> NP -> VP ;
+  UseVA  : GraspV -> AP -> VP ;
+  UseVNN : GraspV -> NP -> NP -> VP ;
+  UseVNA : GraspV -> NP -> AP -> VP ;
+
+  VerbVS  : GraspVS -> GraspV ;
+  VerbVQ  : GraspVQ -> GraspV ;
+  VerbVV  : GraspVV -> GraspV ;
+
+  ComplVS : GraspVS -> S  -> VP ;  -- know that she walks
+  ComplVQ : GraspVQ -> QS -> VP ;  -- wonder who walks
+  ComplVV : GraspVV -> VP -> VP ;  -- want to walk
+
+  AdvVP : VP -> Adv -> VP ; -- walk in the city
 
 }
