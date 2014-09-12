@@ -1,11 +1,6 @@
 
 var MAX_DEPTH = 3;
-var MAX_MENUSIZE = 99;
-var MENUS_PER_PHRASE = 20;
-var GENERATE_TIMEOUT = 1000;
-var SIMILAR_TIMEOUT = 1000;
-var FILTER_TIMEOUT = 1000;
-var MENU_TIMEOUT = 1000;
+var MENU_TIMEOUT = 500;
 
 var FunTyping;
 var TypingFuns;
@@ -52,7 +47,7 @@ function equal_phrases(tree1, tree2) {
             var s2 = subs2[j];
             if (strTree(s1.tree) == strTree(s2.tree)) {
                 equals1[s1.path] = s2.path;
-                // equals2[s2.path] = s1.path;
+                equals2[s2.path] = s1.path;
                 break;
             }
         }
@@ -78,77 +73,100 @@ function initialize_menus(lang, tree) {
     var visited = {};
     visited[strTree(tree)] = all_phrase_paths;
 
+    START_TIMER("similars");
+    var all_similars = {};
+    var all_menus = {};
+    var max_cost = 0;
     for (var i = 0; i < all_phrase_paths.length; i++) {
         var phrase_path = all_phrase_paths[i];
-        START_TIMER("similars");
         var phrase_tree = getSubtree(tree, phrase_path);
-        similars = similar_trees(phrase_tree);
-        STOP_TIMER("similars");
+        all_similars[phrase_path] = similar_trees(phrase_tree);
+        max_cost = Math.max(max_cost, all_similars[phrase_path].length);
+        all_menus[phrase_path] = {};
+    }
+    STOP_TIMER("similars");
 
-        var phrase_left = restrict_left(lin, phrase_path);
-        var phrase_right = restrict_right(lin, phrase_path);
-        var phrase_lin = lin.slice(phrase_left, phrase_right + 1);
+    START_TIMER("menugroup");
+    var ctr = 0; 
+    menuloop:
+    for (var cost = 1; cost <= max_cost; cost++) {
+        for (var i = 0; i < all_phrase_paths.length; i++) {
+            var phrase_path = all_phrase_paths[i];
+            var phrase_left = restrict_left(lin, phrase_path);
+            var phrase_right = restrict_right(lin, phrase_path);
+            var phrase_lin = lin.slice(phrase_left, phrase_right + 1);
 
-        START_TIMER("menugroup");
-        var ctr = 0; 
-        var menus = {};
-        menuloop:
-        for (var cost = 1; cost <= similars.length; cost++) {
-            var simphrs = similars[cost] || [];
-            itemloop:
-            for (var simix = 0; simix < simphrs.length; simix++) {
-                START_TIMER("visited");
-                var sim = simphrs[simix];
-                var simtree = updateCopy(tree, phrase_path, sim.tree);
-                var stree = strTree(simtree);
-                var visitlist = visited[stree];
-                if (!visitlist) {
-                    visitlist = visited[stree] = [];
-                } else {
-                    for (var sti = 0; sti < visitlist.length; sti++) {
-                        if (startswith(visitlist[sti], phrase_path)) {
-                            STOP_TIMER("visited");
-                            continue itemloop;
+            var menus = all_menus[phrase_path];
+            var similars = all_similars[phrase_path];
+            var simphrs = similars[cost];
+            if (simphrs) {
+                START_TIMER("cost-" + cost);
+                itemloop:
+                for (var simix = 0; simix < simphrs.length; simix++) {
+                    if (GET_TIMER("menugroup") > MENU_TIMEOUT) {
+                        console.log("TIMEOUT: breaking menuloop, cost " + cost + 
+                                    ", path " + phrase_path + ", menu items " + ctr);
+                        STOP_TIMER("cost-" + cost);
+                        break menuloop;
+                    }
+                    START_TIMER("visited");
+                    var sim = simphrs[simix];
+                    var simtree = updateCopy(tree, phrase_path, sim.tree);
+                    var stree = strTree(simtree);
+                    var visitlist = visited[stree];
+                    if (!visitlist) {
+                        visitlist = visited[stree] = [];
+                    } else {
+                        for (var sti = 0; sti < visitlist.length; sti++) {
+                            if (startswith(visitlist[sti], phrase_path)) {
+                                STOP_TIMER("visited");
+                                continue itemloop;
+                            }
                         }
                     }
+                    visitlist.push(phrase_path);
+                    STOP_TIMER("visited");
+
+                    START_TIMER("simlin");
+                    var simlin = Linearise(lang, simtree);
+                    STOP_TIMER("simlin");
+
+                    var pleft = phrase_left;
+                    var pright = phrase_right;
+                    var sleft = restrict_left(simlin, phrase_path);
+                    var sright = restrict_right(simlin, phrase_path);
+                    while (pleft < pright && sleft < sright && lin[pleft].word == simlin[sleft].word) {
+                        pleft++; sleft++;
+                    }
+                    while (pleft < pright && sleft < sright && lin[pright].word == simlin[sright].word) {
+                        pright--; sright--;
+                    }
+
+                    var phrase_simlin = simlin.slice(sleft, sright + 1);
+                    var slin = hash(mapwords(phrase_simlin));
+                    var plin = hash(mapwords(lin.slice(pleft, pright+1)));
+                    if (plin == slin) continue;
+
+                    var pspan = hash([pleft, pright]);
+                    if (!menus[pspan]) menus[pspan] = {};
+                    var current = menus[pspan][slin];
+                    if (current && current.cost <= cost) continue;
+                    menus[pspan][slin] = {'cost':cost, 'tree':simtree, 'lin':phrase_simlin, 'path':phrase_path,
+                                          'pleft':pleft, 'pright':pright, 'sleft':sleft, 'sright':sright};
+                    ctr++;
                 }
-                visitlist.push(phrase_path);
-                STOP_TIMER("visited");
-
-                START_TIMER("simlin");
-                var simlin = Linearise(lang, simtree);
-                STOP_TIMER("simlin");
-
-                var pleft = phrase_left;
-                var pright = phrase_right;
-                var sleft = restrict_left(simlin, phrase_path);
-                var sright = restrict_right(simlin, phrase_path);
-                while (pleft < pright && sleft < sright && lin[pleft].word == simlin[sleft].word) {
-                    pleft++; sleft++;
-                }
-                while (pleft < pright && sleft < sright && lin[pright].word == simlin[sright].word) {
-                    pright--; sright--;
-                }
-
-                var phrase_simlin = simlin.slice(sleft, sright + 1);
-                var slin = hash(mapwords(phrase_simlin));
-                var plin = hash(mapwords(lin.slice(pleft, pright+1)));
-                if (plin == slin) continue;
-
-                var pspan = hash([pleft, pright]);
-                if (!menus[pspan]) menus[pspan] = {};
-                var current = menus[pspan][slin];
-                if (current && current.cost <= cost) continue;
-                menus[pspan][slin] = {'cost':cost, 'tree':simtree, 'lin':phrase_simlin, 'path':phrase_path,
-                                      'pleft':pleft, 'pright':pright, 'sleft':sleft, 'sright':sright};
-                ctr++;
+                STOP_TIMER("cost-" + cost);
             }
         }
-        STOP_TIMER("menugroup");
+    }
+    STOP_TIMER("menugroup");
 
-        START_TIMER("finalize");
+    START_TIMER("finalize");
+    for (var i = 0; i < all_phrase_paths.length; i++) {
+        var phrase_path = all_phrase_paths[i];
         var ctr = 0;
         final_menus[phrase_path] = {};
+        var menus = all_menus[phrase_path];
         for (var pspan in menus) {
             var menu = menus[pspan];
             var slins = Object.keys(menu);
@@ -163,8 +181,8 @@ function initialize_menus(lang, tree) {
                 menu_items.push(item);
             }
         }
-        STOP_TIMER("finalize");
     }
+    STOP_TIMER("finalize");
     STOP_TIMER(lang);
     return final_menus;
 }
