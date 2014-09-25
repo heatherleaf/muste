@@ -159,8 +159,46 @@ function strObject(obj) {
 }
 
 
+// Busy indicator
+
+var BUSY_DELAY = 50;
+var BUSY_STR = "\u25CF";
+// Unicode Character 'BLACK CIRCLE' (U+25CF)
+
+function BUSY(f) {
+    return function(){
+        var obj = $(this);
+        push_busy();
+        console.log("A", f.name, obj);
+        setTimeout(function(){
+            console.log("B", f.name, obj);
+            f(obj);
+            pop_busy();
+            LOG_TIMERS();
+        }, BUSY_DELAY);
+    };
+}
+
+function push_busy() {
+    var ind = document.getElementById('busy-indicator');
+    ind.className = ind.className + BUSY_STR;
+    ind.textContent += BUSY_STR;
+}
+
+function pop_busy() {
+    var ind = document.getElementById('busy-indicator');
+    if (ind.className.slice(-BUSY_STR.length) === BUSY_STR) {
+        ind.className = ind.className.slice(0, -BUSY_STR.length);
+        ind.textContent = ind.textContent.slice(0, -BUSY_STR.length);
+    } else {
+        console.log("POP ERROR", ind.className, ind.textContent);
+    }
+}
+
+
 // Error handling
 
 function alertError(title, description) {
     alert("*** " + title + "***\n" + description);
 }
+
