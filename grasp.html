@@ -2,6 +2,7 @@
 <html> 
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GRASP</title>
   <link rel="stylesheet" href="css/grasp.css" type="text/css"></link>
 
@@ -22,18 +23,46 @@
 </head>
 
 <body>
-  <center>
-    <div><span id="languages"></span></div>
-    <div id="sentences"></div>
-    <ul id="menu"></ul>
+<div id="body">
 
-    <!-- This will be removed if grasp-gui.js is loaded correctly: -->
-    <div id="internal-error">
-      <h1>Internal error</h1>
-      <p>I'm sorry, but there seems to be some problems with the Javascript code!</p>
-      <p>Look at the Javascript console for errors.</p>
+  <span id="busy-indicator" class="idle">&#x25CF;</span>
+  <!-- Unicode Character 'BLACK CIRCLE' (U+25CF) -->
+
+  <button type="button" id="mainmenu-toggler" class="prevent-body-click">&#x2630;</button>
+  <!-- U+2630 // TRIGRAM FOR HEAVEN -->
+
+  <ul id="mainmenu">
+    <li><button type="button" id="restart-button">Restart</button>
+      <!-- U+25EF // LARGE CIRCLE -->
+      <!-- U+27F2 // ANTICLOCKWISE GAPPED CIRCLE ARROW (doesn't show on iPad) -->
+    <li id="L1-menu">
+    <li id="L2-menu">
+    <li>
+      <input type="checkbox" id="connected">
+      <label for="connected">Connected</label>
+      <input type="checkbox" id="debugging">
+      <label for="debugging">Debug</label>
+  </ul>
+
+  <div id="container">
+    <div id="L1">
+      <div class="sentence-line">
+        <span id="L1-sentence" class="prevent-body-click"></span>
+      </div>
+      <div id="vertical-separator">
+        <div id="L1-tree" class="debug"></div>
+      </div>
     </div>
-  </center>
+    <div id="L2">
+      <div class="sentence-line">
+        <span id="L2-sentence" class="prevent-body-click"></span>
+      </div>
+      <div id="L2-tree" class="debug"></div>
+    </div>
+  </div>
 
+  <ul id="menu" class="prevent-body-click"></ul>
+
+</div>
 </body> 
 </html>

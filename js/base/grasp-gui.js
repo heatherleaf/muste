@@ -11,7 +11,6 @@ var Languages;
 var ABSTRACT = 'Abstract';
 var CONCRETE = 'Concrete';
 var STRIKED = 'striked';
-var INACTIVE = 'inactive';
 var HIGHLIGHTED = 'highlighted';
 var CORRECT = 'correct';
 var MATCHING = 'matching';
@@ -23,205 +22,253 @@ var PREFIXPUNCT = /^[¿¡\(]$/;
 
 $(BUSY(function() {
     START_TIMER("initialize", true);
+    initialize_gui();
     initialize_grammar(Grammar);
-    initialize_textspans();
-    $('body').click(click_body);
-    $('#internal-error').remove();
     STOP_TIMER("initialize");
+    regenerate_trees();
+    redraw_sentences();
 }));
 
 
-function click_body() {
-    CurrentPath = CurrentSpan = CurrentLanguage = null;
-    clear_selection();
+function join() {
+    return Array.prototype.slice.apply(arguments).join('-');
+}
+
+function split(s) {
+    return s.split('-');
 }
 
 
-function initialize_textspans() {
-    $('#languages').empty();
-    $('#sentences').empty();
+function initialize_gui() {
+    $('#body')
+        .click(click_body);
+    $('#mainmenu-toggler')
+        .click(toggle_mainmenu);
+    $('#restart-button')
+        .click(BUSY(restart));
+    $('#connected')
+        .click(BUSY(toggle_connected));
+    $('#debugging')
+        .click(toggle_debug);
 
     var prefix = common_prefix(Languages);
-    if (IncludeAbstract) {
-        Languages.push(ABSTRACT);
-        Grammar.concretes[ABSTRACT] = {'abstract': Grammar.abstract, 'linearise': linearise_abstract};
-    }
 
-    $('<div id="dummy">')
-        .appendTo($('#sentences'));
-    for (var langix = 0; langix < Languages.length; langix++) {
-        var lang = Languages[langix];
-        var langtext = startswith(lang, prefix) ? lang.slice(prefix.length) : lang;
-        $('<span class="language clickable">')
-            .html("&nbsp;" + langtext + "&nbsp;")
-            .data(CONCRETE, lang)
-            .click(toggle_language)
-            .appendTo($('#languages'));
-        $('<div id="' + lang + '">')
-            .appendTo($('#sentences'))
-            .append($('<div class="regenerate clickable">')
-                    .html('&#x25EF;') // LARGE CIRCLE
-                    // .html('&#x27F2;') // ANTICLOCKWISE GAPPED CIRCLE ARROW (doesn't show on iPad)
-                    .data(CONCRETE, lang)
-                    .click(regenerate_tree))
-            .append($('<p>'));
-
-        if (!ConnectedTrees || langix == Languages.length-1) {
-            var tree = Grammar.abstract.generate(StartCat);
-            console.log(lang, "-->", strTree(tree));
-            select_tree(lang, tree);
-        }
-    }
-    // Only the first 3 languages are shown by default, and not the abstract:
-    $('.language').slice(3).addClass(INACTIVE); 
-    if (Languages[Languages.length-1] == ABSTRACT) {
-        $('.language').last().addClass(INACTIVE);
-    }
-    showhide_languages();
+    ['L1', 'L2'].forEach(function(L, L_index) {
+        Languages.forEach(function(lang, lang_index){
+            $('#' + join(L,'menu'))
+                .append($('<input>', 
+                          {type: 'radio',
+                           name: join(L,'group'),
+                           id: join(L,lang), 
+                           value: lang, 
+                           checked: L_index == lang_index,
+                           click: BUSY(redraw_sentences)}))
+                .append($('<label></label>',
+                          {'for': join(L,lang),
+                           text: lang.slice(prefix.length)
+                          }));
+        });
+    });
 }
 
+// http://www.hunlock.com/blogs/Mastering_The_Back_Button_With_Javascript
+// window.onbeforeunload = function () {
+//    return "Are you sure you want to leave this now?";
+// }
 
-function regenerate_tree() {
-    var lang = $(this).data(CONCRETE);
-    var tree = Grammar.abstract.generate(StartCat, null, null, function(f){
+// window.location.hash = "no-back-button";
+// window.onhashchange = function(){window.location.hash="no-back-button";}
+
+// window.onpopstate = function (event) {
+//     if (event.state) {
+//         CurrentPage = event.state.page;
+//         var trees = event.state.trees;
+//         for (var lang in trees) {
+//             set_and_show_tree(lang, trees[lang]);
+//         }
+//     }
+// };
+
+
+function trees_are_connected() {
+    return $('#connected').prop('checked');
+}
+
+function toggle_connected() {
+    console.log("CONNECTED");
+    if (trees_are_connected()) {
+        set_and_show_tree('L2', CurrentTree['L1']);
+    }
+    mark_correct_phrases();
+}
+
+function toggle_mainmenu() {
+    $('#mainmenu').toggle();
+}
+
+function current_language(L) {
+    return $('#' + join(L,'menu') + ' :checked').val();
+}
+
+function redraw_sentences() {
+    set_and_show_tree('L1', CurrentTree['L1']);
+    set_and_show_tree('L2', CurrentTree['L2']);
+}
+
+function click_body(event) {
+    var prevented = $(event.target).closest('.prevent-body-click').length > 0;
+    if (!prevented) {
+        CurrentPath = CurrentSpan = CurrentLanguage = null;
+        clear_selection();
+    }
+}
+
+function restart() {
+    var sure = true; // confirm("Are you sure you want to restart the game?");
+    if (sure) {
+        console.log("RESTART");
+        regenerate_trees();
+    }
+}
+
+function toggle_debug() {
+    var debugging = $('#debugging').prop('checked');
+    console.log("DEBUG", debugging, $('.debug'));
+    $('.debug').toggle(debugging);
+}
+
+function generate_random_tree() {
+    return Grammar.abstract.generate(StartCat, null, null, function(f){
         return !startswith(f, "default_");
     });
-    console.log(lang, "-->", strTree(tree));
-    select_tree(lang, tree);
 }
 
-
-function toggle_language(event) {
-    event.stopPropagation();
-    $(this).toggleClass(INACTIVE);
-    showhide_languages();
-}
-
-
-function showhide_languages() {
-    clear_selection();
-    $('.language').each(function() {
-        var inactive = $(this).hasClass(INACTIVE);
-        var lang = $(this).data(CONCRETE);
-        $('#' + lang).toggle(!inactive);
-    });
-}
-
-
-window.onpopstate = function (event) {
-    if (event.state) {
-        CurrentPage = event.state.page;
-        var trees = event.state.trees;
-        for (var lang in trees) {
-            set_and_show_tree(lang, trees[lang]);
-        }
+function regenerate_trees() {
+    START_TIMER("regenerate_trees", true);
+    if (trees_are_connected()) {
+        var tree = generate_random_tree();
+        set_and_show_tree('L1', tree);
+        set_and_show_tree('L2', tree);
+    } else {
+        set_and_show_tree('L1', generate_random_tree());
+        set_and_show_tree('L2', generate_random_tree());
     }
+    STOP_TIMER("regenerate_trees");
+    mark_correct_phrases();
 }
 
-
-function select_tree(lang, tree) {
-    var trees = {};
-    for (var i = 0; i < Languages.length; i++) {
-        var l = Languages[i];
-        if (ConnectedTrees || l == lang) {
-            set_and_show_tree(l, tree);
-        }
-        trees[l] = CurrentTree[l];
+function select_tree(L, tree) {
+    if (trees_are_connected()) {
+        set_and_show_tree('L1', tree);
+        set_and_show_tree('L2', tree);
+    } else {
+        set_and_show_tree(L, tree);
     }
-    if (!ConnectedTrees) {
-        mark_correct_phrases();
-    }
-    CurrentPage++;
-    history.pushState({'trees':trees, 'page':CurrentPage}, 
-                      "GRASP, page " + CurrentPage, "?page=" + CurrentPage + "#");
+    mark_correct_phrases();
 }
-
 
 function mark_correct_phrases() {
-    RESET_TIMERS();
-    START_TIMER("mark-correct");
-    var reference_tree = CurrentTree[Languages[0]];
-    var some_correct_tree = false;
-    var correct_ref_paths = {};
-    for (var i = 1; i < Languages.length; i++) {
-        var other_tree = CurrentTree[Languages[i]];
-        if (strTree(other_tree) == strTree(reference_tree)) {
-            $('#' + Languages[i] + ' .word')
-                .addClass(CORRECT);
-            some_correct_tree = true;
+    START_TIMER("mark-correct", true);
+    $('.word').removeClass(CORRECT).removeClass(MATCHING);
+    if (!trees_are_connected()) {
+        var t1 = CurrentTree['L1'];
+        var t2 = CurrentTree['L2'];
+        if (strTree(t1) == strTree(t2)) {
+            $('.word').addClass(CORRECT);
         } else {
-            var equals = equal_phrases(other_tree, reference_tree);
-            $('#' + Languages[i] + ' .word')
-                .each(function(){
-                    var path = $(this).data('path');
-                    var refpath = equals[path];
-                    $(this).removeClass(CORRECT);
-                    $(this).toggleClass(MATCHING, Boolean(refpath));
-                    if (refpath) {
-                        correct_ref_paths[refpath] = true;
-                    }
-                });
+            var equals = equal_phrases(t1, t2);
+            $('.word').each(function(){
+                var path = $(this).data('path');
+                var refpath = equals[path];
+                $(this).toggleClass(MATCHING, Boolean(refpath));
+            });
         }
     }
-    if (some_correct_tree) {
-        $('#' + Languages[0] + ' .word')
-            .addClass(CORRECT);
-    } else {
-        $('#' + Languages[0] + ' .word')
-            .each(function(){
-                var refpath = $(this).data('path');
-                var is_correct = Boolean(correct_ref_paths[refpath]);
-                $(this).removeClass(CORRECT);
-                $(this).toggleClass(MATCHING, is_correct);
-            });
-    }
     STOP_TIMER("mark-correct");
-    LOG_TIMERS();
 }
 
-
-function set_and_show_tree(lang, tree) {
+function set_and_show_tree(L, tree) {
     clear_selection();
+    var lang = current_language(L);
+    console.log(L, "/", lang, "-->", strTree(tree));
     var lin = Linearise(lang, tree);
-    var sentence = map_words_and_spacing(lang, mapwords(lin), function(i, content){
-        return $('<span class="word clickable">')
-            .html(content)
-            .data('nr', i)
-            .data('lang', lang)
-            .data('path', lin[i].path)
-            .click(click_word);
-    });
-    $('#' + lang + ' p').empty().append(sentence);
-    CurrentTree[lang] = tree;
+    var sentence = map_words_and_spacing(lang, L, lin, click_word);
+// function(i, content){
+//         return $('<span class="word clickable">')
+//             .html(content)
+//             .data('nr', i)
+//             .data('L', L)
+//             .data('path', lin[i].path)
+//             .click(click_word);
+//     });
+    $('#' + join(L,'sentence')).empty().append(sentence);
+
+    var abslin = linearise_abstract(tree);
+    var absentence = map_words_and_spacing(null, L, abslin);
+    // var absentence = map_words_and_spacing(null, mapwords(abslin), function(i, content){
+    //     return $('<span class="word">')
+    //         .html(content)
+    //         .data('nr', i)
+    //         .data('L', L)
+    //         .data('path', abslin[i].path);
+    // });
+    $('#' + join(L,'tree')).empty().append(absentence);
+
+    CurrentTree[L] = tree;
     CurrentPath = CurrentSpan = CurrentLanguage = null;
-    setTimeout(function(){
-        RESET_TIMERS();
-        CurrentMenus[lang] = initialize_menus(lang, tree);
-        LOG_TIMERS();
-    }, 0);
+    // BUSY(function(){
+    CurrentMenus[L] = initialize_menus(lang, tree);
+    // })();
 }
 
 
-function map_words_to_html(words, callback) {
-    var sentence = $('<div>');
-    for (var i = 0; i < words.length; i++) {
+function map_words_and_spacing(lang, L, lin, handler) {
+    if (typeof MapWordsToHTML == "object" && lang in MapWordsToHTML) {
+        return MapWordsToHTML[lang](Metadata[lang], words, callback);
+    } else {
+        return map_words_to_html(L, lin, handler);
+    }
+}
+
+
+function map_words_to_html(L, lin, handler) {
+    var words = mapwords(lin);
+    var sentence = $('<span></span>');
+    for (var i = 0; i <= words.length; i++) {
         var previous = words[i-1], word = words[i], next = words[i+1];
         if (word == NOSPACING) continue;
 
-        var prefix = " &nbsp;", suffix = "&nbsp; ";
-        if (previous == NOSPACING || PREFIXPUNCT.test(previous) || PUNCTUATION.test(word)) 
-            prefix = "";
-        if (next == NOSPACING || PREFIXPUNCT.test(word) || PUNCTUATION.test(next)) 
-            suffix = "";
+        if (!(previous == NOSPACING || PREFIXPUNCT.test(previous) || PUNCTUATION.test(word))) {
+            var path = (lin[i] || lin[i-1]).path;
+            var w = $('<span class="word space"></span>')
+                .data({'nr':i, 'L':L, 'path':path})
+                .html(' &nbsp; ')
+                .appendTo(sentence);
+            if (handler) {
+                w.addClass('clickable').click(BUSY(handler));
+            }
+        }
 
-        sentence.append(callback(i, prefix+word+suffix))
+        if (word) {
+            var path = lin[i].path;
+            var w = $('<span class="word"></span>')
+                .data({'nr':i, 'L':L, 'path':path})
+                .html(word)
+                .appendTo(sentence);
+            if (handler) {
+                w.addClass('clickable').click(BUSY(handler));
+            }
+            $('<sub class="debug"></sub>')
+                .text(path)
+                .appendTo(sentence);
+        }
     }
     return sentence;
 }
 
 
 function map_words_to_images(metadata, words, callback) {
-    var sentence = $('<div>');
+    var sentence = $('<span></span>');
     var prefix, suffix;
     var indicator_elem = $('<span class="indicator">');
     var indicator_wdt = 0;
@@ -256,18 +303,11 @@ function map_words_to_images(metadata, words, callback) {
 }
 
 
-function map_words_and_spacing(lang, words, callback) {
-    if (typeof MapWordsToHTML == "object" && lang in MapWordsToHTML) {
-        return MapWordsToHTML[lang](Metadata[lang], words, callback);
-    } else {
-        return map_words_to_html(words, callback);
-    }
-}
-
-
 function clear_selection() {
     $('.word').removeClass(HIGHLIGHTED).removeClass(STRIKED);
+    $('.span').children().unwrap();
     $('#menu').empty().hide();
+    $('#mainmenu').hide();
 }
 
 
@@ -289,14 +329,15 @@ function next_span(wordnr, span) {
 }
 
 
-function click_word(event) {
-    event.stopPropagation();
-    var clicked = $(this);
+function click_word(clicked) {
+    // var clicked = $(event.target); // $(this);
+    console.log("C", clicked);
     var wordnr = clicked.data('nr');
-    var wordlang = clicked.data('lang');
+    var wordL = clicked.data('L');
     var wordpath = clicked.data('path');
-    if (wordlang !== CurrentLanguage) {
-        CurrentLanguage = wordlang;
+    // console.log(wordnr, wordL, wordpath);
+    if (wordL !== CurrentLanguage) {
+        CurrentLanguage = wordL;
     }
     if (!(CurrentPath && startswith(wordpath, CurrentPath))) {
         CurrentPath = wordpath + "#";
@@ -322,6 +363,7 @@ function click_word(event) {
     }
 
     var selectedpaths = {};
+
     $('#' + CurrentLanguage + ' .word')
         .each(function() {
             var nr = $(this).data('nr');
@@ -331,35 +373,47 @@ function click_word(event) {
                 selectedpaths[path] = true;
             }
         });
-    (ConnectedTrees ? $('.word') : $('#' + CurrentLanguage + ' .word'))
-        .each(function() {
-            var path = $(this).data('path');
-            if (selectedpaths[path]) {
-                $(this).addClass(HIGHLIGHTED);
-            }
-        });
+
+    $('.highlighted').children().unwrap();
+    $('#' + join(CurrentLanguage,'sentence') + ' .word')
+        .filter(function(){
+            var nr = $(this).data('nr');
+            return CurrentSpan[0] <= nr && nr <= CurrentSpan[1];
+        })
+        .wrapAll('<span class="highlighted"></span>');
+
+
+    // (trees_are_connected() ? $('.word') : $('#' + CurrentLanguage + ' .word'))
+    //     .each(function() {
+    //         var path = $(this).data('path');
+    //         if (selectedpaths[path]) {
+    //             $(this).addClass(HIGHLIGHTED);
+    //         }
+    //     });
 
     for (var itemix = 0; itemix < menu.length; itemix++) {
         var item = menu[itemix];
         var menuitem = $('<span class="clickable">')
             .data('tree', item.tree)
-            .click(function(){
-                select_tree(CurrentLanguage, $(this).data('tree'));
-            });
+            .click(BUSY(function(c){
+                select_tree(CurrentLanguage, c.data('tree'));
+            }));
         if (item.lin.length == 0) {
             menuitem.append($('<span>').html("&empty;"));
         } else {
-            var words = mapwords(item.lin);
-            map_words_and_spacing(CurrentLanguage, words, function(i, content){
-                return $('<span>').html(content);
-            }).appendTo(menuitem);
+            // var words = mapwords(item.lin);
+            map_words_and_spacing(null, CurrentLanguage, item.lin)
+            // map_words_and_spacing(CurrentLanguage, words, function(i, content){
+            //     return $('<span>').html(content);
+            // })
+                    .appendTo(menuitem);
 
         }
         $('<li>').append(menuitem).appendTo($('#menu'));
     }
     var pos = clicked.offset();
     var xadd = (clicked.outerWidth() - $('#menu').outerWidth()) / 2;
-    var yadd = clicked.outerHeight() * 2/3;
+    var yadd = clicked.outerHeight() * 3/4;
     $('#menu').css({
         'top': (pos.top + yadd) + 'px',
         'left': (pos.left + xadd) + 'px',
@@ -367,11 +421,3 @@ function click_word(event) {
     }).show();
 }
 
-
-// Debugging
-
-function toggle_abstract(abs) {
-    if (abs == null) abs = !ABSTRACT;
-    ABSTRACT = abs;
-    $('#ABSTRACT').css('visibility', ABSTRACT ? 'visible' : 'hidden');
-}
