@@ -57,7 +57,7 @@ function equal_phrases(tree1, tree2) {
 
 
 function initialize_menus(lang, tree) {
-    START_TIMER(lang);
+    START_TIMER(lang, true);
     var final_menus = {};
     var lin = Linearise(lang, tree);
     var all_phrase_paths = {};
@@ -73,7 +73,7 @@ function initialize_menus(lang, tree) {
     var visited = {};
     visited[strTree(tree)] = all_phrase_paths;
 
-    START_TIMER("similars");
+    START_TIMER(lang+":similars", true);
     var all_similars = {};
     var all_menus = {};
     var max_cost = 0;
@@ -84,9 +84,9 @@ function initialize_menus(lang, tree) {
         max_cost = Math.max(max_cost, all_similars[phrase_path].length);
         all_menus[phrase_path] = {};
     }
-    STOP_TIMER("similars");
+    STOP_TIMER(lang+":similars");
 
-    START_TIMER("menugroup");
+    START_TIMER(lang+":menugroup", true);
     var ctr = 0; 
     menuloop:
     for (var cost = 1; cost <= max_cost; cost++) {
@@ -100,16 +100,16 @@ function initialize_menus(lang, tree) {
             var similars = all_similars[phrase_path];
             var simphrs = similars[cost];
             if (simphrs) {
-                START_TIMER("cost-" + cost);
+                START_TIMER(lang+":cost-" + cost);
                 itemloop:
                 for (var simix = 0; simix < simphrs.length; simix++) {
-                    if (GET_TIMER("menugroup") > MENU_TIMEOUT) {
+                    if (GET_TIMER(lang+":menugroup") > MENU_TIMEOUT) {
                         console.log("TIMEOUT: breaking menuloop, cost " + cost + 
                                     ", path " + phrase_path + ", menu items " + ctr);
-                        STOP_TIMER("cost-" + cost);
+                        STOP_TIMER(lang+":cost-" + cost);
                         break menuloop;
                     }
-                    START_TIMER("visited");
+                    START_TIMER(lang+":visited");
                     var sim = simphrs[simix];
                     var simtree = updateCopy(tree, phrase_path, sim.tree);
                     var stree = strTree(simtree);
@@ -119,17 +119,17 @@ function initialize_menus(lang, tree) {
                     } else {
                         for (var sti = 0; sti < visitlist.length; sti++) {
                             if (startswith(visitlist[sti], phrase_path)) {
-                                STOP_TIMER("visited");
+                                STOP_TIMER(lang+":visited");
                                 continue itemloop;
                             }
                         }
                     }
                     visitlist.push(phrase_path);
-                    STOP_TIMER("visited");
+                    STOP_TIMER(lang+":visited");
 
-                    START_TIMER("simlin");
+                    START_TIMER(lang+":simlin");
                     var simlin = Linearise(lang, simtree);
-                    STOP_TIMER("simlin");
+                    STOP_TIMER(lang+":simlin");
 
                     var pleft = phrase_left;
                     var pright = phrase_right;
@@ -155,13 +155,13 @@ function initialize_menus(lang, tree) {
                                           'pleft':pleft, 'pright':pright, 'sleft':sleft, 'sright':sright};
                     ctr++;
                 }
-                STOP_TIMER("cost-" + cost);
+                STOP_TIMER(lang+":cost-" + cost);
             }
         }
     }
-    STOP_TIMER("menugroup");
+    STOP_TIMER(lang+":menugroup");
 
-    START_TIMER("finalize");
+    START_TIMER(lang+":finalize", true);
     for (var i = 0; i < all_phrase_paths.length; i++) {
         var phrase_path = all_phrase_paths[i];
         var ctr = 0;
@@ -182,7 +182,7 @@ function initialize_menus(lang, tree) {
             }
         }
     }
-    STOP_TIMER("finalize");
+    STOP_TIMER(lang+":finalize");
     STOP_TIMER(lang);
     return final_menus;
 }
@@ -411,7 +411,7 @@ function generate_all_trees(typ) {
         return result;
     }
 
-    START_TIMER("generate");
+    START_TIMER("generate", true);
     var total_trees = 0;
     var generated_trees = {};
     for (var typ in TypingFuns) {

@@ -21,14 +21,14 @@ var PUNCTUATION = /^[\,\;\.\?\!\)]$/;
 var PREFIXPUNCT = /^[¿¡\(]$/;
 
 
-$(function() {
-    RESET_TIMERS();
+$(BUSY(function() {
+    START_TIMER("initialize", true);
     initialize_grammar(Grammar);
-    LOG_TIMERS();
     initialize_textspans();
     $('body').click(click_body);
     $('#internal-error').remove();
-});
+    STOP_TIMER("initialize");
+}));
 
 
 function click_body() {

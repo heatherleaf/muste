@@ -97,13 +97,19 @@ function unhash(hash) {
 
 var TIMERS = {};
 
-function RESET_TIMERS() {
-    TIMERS = {};
-}
-
-function START_TIMER(n) {
-    if (!TIMERS[n]) TIMERS[n] = 0;
-    TIMERS[n] -= Date.now();
+function START_TIMER(n, fresh) {
+    if (fresh) {
+        if (TIMERS[n]) {
+            if (TIMERS[n] < -100) STOP_TIMER(n);
+            var i = 1;
+            while (TIMERS[n+"."+i]) i++;
+            TIMERS[n+"."+i] = TIMERS[n];
+        } 
+        TIMERS[n] = -Date.now();
+    } else {
+        if (!TIMERS[n]) TIMERS[n] = 0;
+        TIMERS[n] -= Date.now();
+    }
 }
 
 function GET_TIMER(n) {
@@ -121,7 +127,7 @@ function LOG_TIMERS() {
     }
     out.sort();
     console.log("TIMERS", out.join(", "));
-    // console.log("TIMERS", JSON.stringify(TIMERS));
+    TIMERS = {};
 }
 
 
