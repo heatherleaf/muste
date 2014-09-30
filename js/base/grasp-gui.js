@@ -138,12 +138,14 @@ function generate_random_tree() {
 function regenerate_trees() {
     START_TIMER("regenerate_trees", true);
     if (trees_are_connected()) {
-        var tree = generate_random_tree();
+        var tree = (typeof DefaultTree1 == "object") ? DefaultTree1 : generate_random_tree();
         set_and_show_tree('L1', tree);
         set_and_show_tree('L2', tree);
     } else {
-        set_and_show_tree('L1', generate_random_tree());
-        set_and_show_tree('L2', generate_random_tree());
+        var tree1 = (typeof DefaultTree1 == "object") ? DefaultTree1 : generate_random_tree();
+        var tree2 = (typeof DefaultTree2 == "object") ? DefaultTree2 : generate_random_tree();
+        set_and_show_tree('L1', tree1);
+        set_and_show_tree('L2', tree2);
     }
     $('#score').text(0);
     STOP_TIMER("regenerate_trees");
