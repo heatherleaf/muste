@@ -338,41 +338,43 @@ function click_word(clicked) {
     var wordnr = clicked.data('nr');
     var wordpath = clicked.data('path');
     var maxwidth = $('#' + join(lang,'sentence') + ' .word').length;
+    var innermost_phrase = $('.' + join(lang, wordpath));
 
-    var span, highlighted;
+    var span, phrase;
     if (clicked.hasClass(STRIKED)) {
-        highlighted = clicked.closest('.' + HIGHLIGHTED);
-    } 
-    if (highlighted && highlighted.length) {
-        span = highlighted.data('span');
-    } else {
-        highlighted = $('.' + join(lang, wordpath));
+        phrase = clicked.closest('.' + HIGHLIGHTED);
+        if (phrase.length) {
+            span = phrase.data('span');
+        }
+    }
+    if (!span) {
+        phrase = innermost_phrase;
         span = next_span(wordnr);
     }
 
     clear_selection();
-    var phrase = highlighted;
     var menu;
     while (!(menu && menu.length)) {
         phrase = phrase.parent();
         if (!phrase.hasClass('phrase')) {
-            phrase = highlighted;
+            phrase = innermost_phrase;
             span = next_span(wordnr, span, maxwidth);
             if (!span) return;
         }
         menu = phrase.data('menu');
         if (menu) menu = menu[hash(span)];
     }
+    console.log('SPAN:', span[0] + '-' + span[1], 'PATH:', phrase.data('path'), 'MENU:', menu.length + ' items');
 
     phrase.addClass(HIGHLIGHTED)
         .data('span', span);
-    $('#' + join(lang,'sentence') + ' .word')
+    phrase.find('.word')
         .filter(function(){
             var nr = $(this).data('nr');
             return span[0] <= nr && nr <= span[1];
         })
         .addClass(STRIKED);
-    $('#' + join(lang,'sentence') + ' .space')
+    phrase.find('.space')
         .filter(function(){
             var nr = $(this).data('nr');
             return span[0] < nr && nr <= span[1];
