@@ -25,6 +25,35 @@ function initialize_grammar(grammar) {
 }
 
 
+function bracketise(lin) {
+    var stack = [['']];
+    var n = 0;
+    var path = '';
+    while (true) {
+        var linpath = n<lin.length && lin[n].path+'w';
+        if (startswith(linpath, path)) {
+            if (path === linpath) {
+                var linword = lin[n].word;
+                stack[stack.length-1].push({n:n, word:linword, path:linpath});
+                n++;
+            } else {
+                for (var i = path.length+1; i <= linpath.length; i++) stack.push([linpath.slice(0,i)]);
+                path = linpath;
+            }
+        } else {
+            var bracklin = stack.pop();
+            stack[stack.length-1].push(bracklin)
+            path = path.slice(0, -1);
+            if (!path) break;
+        }
+    }
+    if (lin.length !== n || stack.length !== 1) {
+        console.log("INTERNAL ERROR: ", lin.length, "!=", n, "//", stack.length, "!=", 1);
+    }
+    return stack[0];
+}
+
+
 function get_subtrees(tree, path, subtrees) {
     if (!isTree(tree)) return [];
     if (!path) path = "";
