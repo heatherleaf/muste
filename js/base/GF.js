@@ -327,21 +327,21 @@ function _coerce_cats(concrete, cats, i) {
 }
 
 
-/** strLin(lin, ?focuspath, ?prefix, ?suffix)
+/** strLin(lin, ?showpath, ?focuspath, ?prefix, ?suffix)
     @param lin: a linearisation as returned by GFConcrete.linearise()
-    @param focuspath: the highlighted node (a string of digits)
+    @param showpath: boolean, if true then show the path of each word
+    @param focuspath: the highlighted node, if any (a string of digits)
     @param prefix, suffix: the string that should be used for highlighting
     @return: a String
 **/
-function strLin(lin, focus, prefix, suffix) {
+function strLin(lin, showpath, focus, prefix, suffix) {
     if (prefix == null) prefix = "*";
     if (suffix == null) suffix = prefix;
     return lin.map(function(w){
-        if (startswith(w.path, focus)) {
-            return prefix + w.word + "/" + w.path + suffix;
-        } else {
-            return w.word + "/" + w.path;
-        }
+        var token = w.word;
+        if (showpath) token += "/" + w.path;
+        if (startswith(w.path, focus)) token = prefix + token + suffix;
+        return token;
     }).join(" ");
 }
 
