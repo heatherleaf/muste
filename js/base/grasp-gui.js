@@ -26,7 +26,6 @@ $(BUSY(function() {
     initialize_grammar(Grammar);
     STOP_TIMER("initialize");
     regenerate_trees();
-    redraw_sentences();
 }));
 
 
@@ -193,32 +192,15 @@ function set_and_show_tree(L, tree) {
     console.log(L, "/", lang, "-->", strTree(tree));
     var lin = Linearise(lang, tree);
     var sentence = map_words_and_spacing(lang, L, lin, click_word);
-// function(i, content){
-//         return $('<span class="word clickable">')
-//             .html(content)
-//             .data('nr', i)
-//             .data('L', L)
-//             .data('path', lin[i].path)
-//             .click(click_word);
-//     });
     $('#' + join(L,'sentence')).empty().append(sentence);
 
     var abslin = linearise_abstract(tree);
     var absentence = map_words_and_spacing(null, L, abslin);
-    // var absentence = map_words_and_spacing(null, mapwords(abslin), function(i, content){
-    //     return $('<span class="word">')
-    //         .html(content)
-    //         .data('nr', i)
-    //         .data('L', L)
-    //         .data('path', abslin[i].path);
-    // });
     $('#' + join(L,'tree')).empty().append(absentence);
 
     CurrentTree[L] = tree;
     CurrentPath = CurrentSpan = CurrentLanguage = null;
-    // BUSY(function(){
     CurrentMenus[L] = initialize_menus(lang, tree);
-    // })();
 }
 
 
@@ -330,8 +312,6 @@ function next_span(wordnr, span) {
 
 
 function click_word(clicked) {
-    // var clicked = $(event.target); // $(this);
-    console.log("C", clicked);
     var wordnr = clicked.data('nr');
     var wordL = clicked.data('L');
     var wordpath = clicked.data('path');
@@ -383,13 +363,6 @@ function click_word(clicked) {
         .wrapAll('<span class="highlighted"></span>');
 
 
-    // (trees_are_connected() ? $('.word') : $('#' + CurrentLanguage + ' .word'))
-    //     .each(function() {
-    //         var path = $(this).data('path');
-    //         if (selectedpaths[path]) {
-    //             $(this).addClass(HIGHLIGHTED);
-    //         }
-    //     });
 
     for (var itemix = 0; itemix < menu.length; itemix++) {
         var item = menu[itemix];
@@ -403,9 +376,6 @@ function click_word(clicked) {
         } else {
             // var words = mapwords(item.lin);
             map_words_and_spacing(null, CurrentLanguage, item.lin)
-            // map_words_and_spacing(CurrentLanguage, words, function(i, content){
-            //     return $('<span>').html(content);
-            // })
                     .appendTo(menuitem);
 
         }

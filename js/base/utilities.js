@@ -175,9 +175,7 @@ function BUSY(f) {
     return function(){
         var obj = $(this);
         push_busy();
-        console.log("A", f.name, obj);
         setTimeout(function(){
-            console.log("B", f.name, obj);
             f(obj);
             pop_busy();
             LOG_TIMERS();
