@@ -35,7 +35,7 @@ body, #body {
 .sentence-line {
     background-color: white;
     margin: 0.3em;
-    padding: 0.3em;
+    padding: 0.3em 0.6em;
     display: inline-block;
     border-radius: 20px;
 }
@@ -124,18 +124,24 @@ input:checked + label {
     border-radius: 10px;
 }
 
+#menu li {
+    text-align: center;
+    padding: 0 0.4em;
+}
+
 .matching {
     background-color: #ddf;
+    border-radius: 10px;
 }
 
 .correct {
     background-color: #cfc;
+    border-radius: 10px;
 }
 
 .highlighted {
     background-color: #eee;
-    font-weight: bolder;
-    background-color: rgba(220,220,220,0.7); 
+    background-color: rgba(220,220,220,0.3); 
 }
 
 .clickable, .word, button, label, .highlighted {
@@ -155,6 +161,8 @@ input:checked + label {
 
 .striked {
     text-decoration: line-through;
+    font-weight: bolder;
+    color: red;
 }
 
 img {
