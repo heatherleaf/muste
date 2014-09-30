@@ -62,6 +62,10 @@ input[type=radio], input[type=checkbox] {
     color: grey;
 }
 
+#score {
+    padding: 0 0.2em;
+}
+
 #mainmenu label, #mainmenu button {
     font-size: 12pt; 
     padding: 0 0.4em;

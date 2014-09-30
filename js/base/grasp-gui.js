@@ -152,6 +152,7 @@ function regenerate_trees() {
         set_and_show_tree('L1', generate_random_tree());
         set_and_show_tree('L2', generate_random_tree());
     }
+    $('#score').text(0);
     STOP_TIMER("regenerate_trees");
     mark_correct_phrases();
 }
@@ -163,6 +164,8 @@ function select_tree(L, tree) {
     } else {
         set_and_show_tree(L, tree);
     }
+    var score = $('#score');
+    score.text(parseInt(score.text()) + 1);
     mark_correct_phrases();
 }
 
