@@ -1,5 +1,5 @@
 
-var MAX_DEPTH = 3;
+var MAX_DEPTH = 3; 
 var MENU_TIMEOUT = 1000;
 
 var FunTyping;
@@ -382,69 +382,68 @@ function contains_word(word, words) {
 }
 
 
-function generate_all_trees(typ) {
-    function gentree(typ, path, depth, visited) {
-        var result = [];
-        if (depth >= MAX_DEPTH) return result;
-        result.push({'tree': META + typ, 
-                     'cost': 0, 
-                     'metas': [{'path':path, 'type':typ}]});
-        if (contains_word(typ, visited)) return result;
-        var fun = "default_" + typ;
-        var args = depth > 0 && FunTyping[fun];
-        if (args && args.children) {
-            if (args.children.length == 0) {
-                result.push({'tree': [fun], 
-                             'cost': 1, 
-                             'metas': []});
-            } else {
-                console.warn("Internal error: you shouldn't have got here", fun, args);
-            }
+function gentrees(typ, path, depth, visited) {
+    var result = [];
+    if (contains_word(typ, visited)) return result;
+    if (depth == 0) {
+        // generate a tree of the form: ?t
+        result.push({'tree':META+typ, 'cost':0, 'metas':[{'path':path,'type':typ}]});
+    }
+    var fun = "default_" + typ;
+    var args = depth > 0 && FunTyping[fun];
+    if (args && args.children) {
+        if (args.children.length == 0) {
+            result.push({'tree': [fun], 
+                         'cost': 1, 
+                         'metas': []});
         } else {
-            var newvisited = visited + " " + typ + " ";
-            for (var argshash in TypingFuns[typ] || {}) {
-                var funs = TypingFuns[typ][argshash];
-                var args = unhash(argshash);
-                // if (funs.length > 1) {funs = [hash([typ].concat(args))]}
-                var allchildren = genchildren(args, path, 1, depth + 1, newvisited);
-                for (var funix = 0; funix < funs.length; funix++) {
-                    var fun = funs[funix];
-                    for (var childrenix = 0; childrenix < allchildren.length; childrenix++) {
-                        var children = allchildren[childrenix];
-                        result.push({'tree': [fun].concat(children.trees), 
-                                     'cost': children.cost + 1,
-                                     'metas': children.metas});
+            console.warn("Internal error: you shouldn't have got here", fun, args);
+        }
+    } else {
+        var newvisited = visited + " " + typ + " ";
+        for (var argshash in TypingFuns[typ] || {}) {
+            var funs = TypingFuns[typ][argshash];
+            var args = unhash(argshash);
+            var metatrees = [];
+            var metas = [];
+            for (var i = 1; i <= args.length; i++) {
+                var argtyp = args[i-1];
+                metatrees.push(META+argtyp);
+                metas.push({'path':path+i, 'type':argtyp});
+            }
+            // generate trees of the form: (f ?t1 ... ?tn)
+            for (var funix = 0; funix < funs.length; funix++) {
+                var fun = funs[funix];
+                result.push({'tree':[fun].concat(metatrees), 'cost':1, 'metas':metas});
+            }
+            // generate trees of the form: (f (t1) ?t2 ... ?tn), (f ?t1 (t2) ?t3 ... ?tn), ...
+            for (var argix = 1; argix <= args.length; argix++) {
+                var argtyp = args[argix-1];
+                var allchildren = gentrees(argtyp, path+argix, depth+1, newvisited);
+                for (var chix = 0; chix < allchildren.length; chix++) {
+                    var child = allchildren[chix];
+                    var childtrees = metatrees.slice(0, argix-1).concat([child.tree]).concat(metatrees.slice(argix));
+                    var childmetas = metas.slice(0, argix-1).concat(child.metas).concat(metas.slice(argix));
+                    for (var funix = 0; funix < funs.length; funix++) {
+                        var fun = funs[funix];
+                        result.push({'tree': [fun].concat(childtrees), 
+                                     'cost': child.cost + 1,
+                                     'metas': childmetas});
                     }
                 }
             }
         }
-        return result;
     }
-    function genchildren(args, path, i, depth, visited) {
-        var result = [];
-        if (i > args.length) {
-            result.push({'trees':[], 'cost':0, 'metas':[]});
-        } else {
-            var allchild = gentree(args[i-1], path+i, depth, visited);
-            var allchildren = genchildren(args, path, i+1, depth, visited);
-            for (var childix = 0; childix < allchild.length; childix++) {
-                var child = allchild[childix];
-                for (var childrenix = 0; childrenix < allchildren.length; childrenix++) {
-                    var children = allchildren[childrenix];
-                    result.push({'trees': [child.tree].concat(children.trees), 
-                                 'cost': child.cost + children.cost,
-                                 'metas': child.metas.concat(children.metas)});
-                }
-            }
-        }
-        return result;
-    }
+    return result;
+}
 
+
+function generate_all_trees(typ) {
     START_TIMER("generate", true);
     var total_trees = 0;
     var generated_trees = {};
     for (var typ in TypingFuns) {
-        var trees = generated_trees[typ] = gentree(typ, "", 0);
+        var trees = generated_trees[typ] = gentrees(typ, '', 0, '');
         for (var i = 0; i < trees.length; i++) {
             var metas = {};
             for (var j = 0; j < trees[i].metas.length; j++) {
@@ -453,9 +452,6 @@ function generate_all_trees(typ) {
                 metas[meta.type].push(meta);
             }
             trees[i].metas = metas;
-            // trees[i].metas.sort(function(a,b){
-            //     return a.type<b.type ? -1 : a.type>b.type ? 1 : a.path<b.path ? -1 : a.path>b.path ? 1 : 0;
-            // });
         }
         total_trees += generated_trees[typ].length;
     }
