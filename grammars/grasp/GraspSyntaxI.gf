@@ -16,9 +16,9 @@ lin
 
   AdAP ada ap = Grammar.AdAP ada ap ;
 
-  ConjS  co x y = Grammar.ConjS  co (Grammar.BaseS  x y) ;
-  ConjAP co x y = Grammar.ConjAP co (Grammar.BaseAP x y) ;
-  ConjNP co x y = Grammar.ConjNP co (Grammar.BaseNP x y) ;
+  -- ConjS  co x y = Grammar.ConjS  co (Grammar.BaseS  x y) ;
+  -- ConjAP co x y = Grammar.ConjAP co (Grammar.BaseAP x y) ;
+  -- ConjNP co x y = Grammar.ConjNP co (Grammar.BaseNP x y) ;
 
   UseN n = Grammar.UseN n ;
   UseA a = Grammar.PositA a ;
@@ -40,8 +40,8 @@ lin
 
   -- more
 
-  UttS s = Grammar.UttS s ;
-  -- UttQS s = lin Utt {s = (Grammar.UttQS s).s ++ "?"} ;
+  UttS s = lin Utt {s = (Grammar.UttS s).s ++ "."} ;
+  UttQS s = lin Utt {s = (Grammar.UttQS s).s ++ "?"} ;
 
   UseQCl t p cl = Grammar.UseQCl t p cl ;
   

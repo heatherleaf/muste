@@ -10,8 +10,8 @@ fun
   default_PN : PN ;
   default_N : N ;
   default_A : A ;
-  default_V : GraspV ;
-  default_Adv : Adv ;
+  -- default_V : GraspV ;
+  -- default_Adv : Adv ;
   default_NP : NP ;
 
 }
