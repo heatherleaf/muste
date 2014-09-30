@@ -1,6 +1,6 @@
 
 var MAX_DEPTH = 3;
-var MENU_TIMEOUT = 500;
+var MENU_TIMEOUT = 1000;
 
 var FunTyping;
 var TypingFuns;
@@ -66,8 +66,8 @@ function get_subtrees(tree, path, subtrees) {
 }
 
 
-function equal_phrases(tree1, tree2) {
-    var equals1 = {}, equals2 = {};
+function equal_phrases(L1, tree1, L2, tree2) {
+    var equals = {}; equals[L1] = {}; equals[L2] = {};
     var subs1 = get_subtrees(tree1);
     var subs2 = get_subtrees(tree2);
     for (var i = 0; i < subs1.length; i++) {
@@ -75,13 +75,13 @@ function equal_phrases(tree1, tree2) {
         for (var j = 0; j < subs2.length; j++) {
             var s2 = subs2[j];
             if (strTree(s1.tree) == strTree(s2.tree)) {
-                equals1[s1.path] = s2.path;
-                equals2[s2.path] = s1.path;
+                equals[L1][s1.path] = s2.path;
+                equals[L2][s2.path] = s1.path;
                 break;
             }
         }
     }
-    return equals1;
+    return equals;
 }
 
 

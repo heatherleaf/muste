@@ -1,11 +1,4 @@
 
-var CurrentPage = 0;
-var CurrentTree = {};
-var CurrentMenus = {};
-var CurrentPath;
-var CurrentSpan;
-var CurrentLanguage;
-
 var Languages;
 
 var ABSTRACT = 'Abstract';
@@ -96,7 +89,7 @@ function trees_are_connected() {
 function toggle_connected() {
     console.log("CONNECTED");
     if (trees_are_connected()) {
-        set_and_show_tree('L2', CurrentTree['L1']);
+        set_and_show_tree('L2', $('#L1').data('tree'));
     }
     mark_correct_phrases();
 }
@@ -110,14 +103,14 @@ function current_language(L) {
 }
 
 function redraw_sentences() {
-    set_and_show_tree('L1', CurrentTree['L1']);
-    set_and_show_tree('L2', CurrentTree['L2']);
+    set_and_show_tree('L1', $('#L1').data('tree'));
+    set_and_show_tree('L2', $('#L2').data('tree'));
+    mark_correct_phrases();
 }
 
 function click_body(event) {
     var prevented = $(event.target).closest('.prevent-body-click').length > 0;
     if (!prevented) {
-        CurrentPath = CurrentSpan = CurrentLanguage = null;
         clear_selection();
     }
 }
@@ -132,7 +125,7 @@ function restart() {
 
 function toggle_debug() {
     var debugging = $('#debugging').prop('checked');
-    console.log("DEBUG", debugging, $('.debug'));
+    console.log("DEBUG", debugging);
     $('.debug').toggle(debugging);
 }
 
@@ -157,12 +150,12 @@ function regenerate_trees() {
     mark_correct_phrases();
 }
 
-function select_tree(L, tree) {
+function select_tree(data) {
     if (trees_are_connected()) {
-        set_and_show_tree('L1', tree);
-        set_and_show_tree('L2', tree);
+        set_and_show_tree('L1', data.tree);
+        set_and_show_tree('L2', data.tree);
     } else {
-        set_and_show_tree(L, tree);
+        set_and_show_tree(data.lang, data.tree);
     }
     var score = $('#score');
     score.text(parseInt(score.text()) + 1);
@@ -171,17 +164,20 @@ function select_tree(L, tree) {
 
 function mark_correct_phrases() {
     START_TIMER("mark-correct", true);
-    $('.word').removeClass(CORRECT).removeClass(MATCHING);
+    $('.' + CORRECT).removeClass(CORRECT);
+    $('.' + MATCHING).removeClass(MATCHING);
     if (!trees_are_connected()) {
-        var t1 = CurrentTree['L1'];
-        var t2 = CurrentTree['L2'];
+        var t1 = $('#L1').data('tree');
+        var t2 = $('#L2').data('tree');
         if (strTree(t1) == strTree(t2)) {
-            $('.word').addClass(CORRECT);
+            $('.L1-').addClass(CORRECT);
+            $('.L2-').addClass(CORRECT);
         } else {
-            var equals = equal_phrases(t1, t2);
-            $('.word').each(function(){
+            var equals = equal_phrases('L1', t1, 'L2', t2);
+            $('.phrase').each(function(){
+                var L = $(this).data('lang');
                 var path = $(this).data('path');
-                var refpath = equals[path];
+                var refpath = equals[L][path];
                 $(this).toggleClass(MATCHING, Boolean(refpath));
             });
         }
@@ -194,64 +190,81 @@ function set_and_show_tree(L, tree) {
     var lang = current_language(L);
     console.log(L, "/", lang, "-->", strTree(tree));
     var lin = Linearise(lang, tree);
-    var sentence = map_words_and_spacing(lang, L, lin, click_word);
+    var brackets = bracketise(lin);
+    var sentence = map_words_and_spacing(lang, L, lin, brackets, click_word);
     $('#' + join(L,'sentence')).empty().append(sentence);
 
     var abslin = linearise_abstract(tree);
-    var absentence = map_words_and_spacing(null, L, abslin);
-    $('#' + join(L,'tree')).empty().append(absentence);
+    $('#' + join(L,'tree')).text(mapwords(abslin).join(" "));
 
-    CurrentTree[L] = tree;
-    CurrentPath = CurrentSpan = CurrentLanguage = null;
-    CurrentMenus[L] = initialize_menus(lang, tree);
+    $('#' + L).data('tree', tree);
+    var menus = initialize_menus(lang, tree);
+    $('#' + L + ' .phrase').each(function(){
+        var data = $(this).data();
+        $(this).data('menu', menus[$(this).data('path')]);
+    });
 }
 
 
-function map_words_and_spacing(lang, L, lin, handler) {
+function map_words_and_spacing(lang, L, lin, brackets, handler) {
     if (typeof MapWordsToHTML == "object" && lang in MapWordsToHTML) {
         return MapWordsToHTML[lang](Metadata[lang], words, callback);
     } else {
-        return map_words_to_html(L, lin, handler);
+        return map_words_to_html(L, lin, brackets, handler);
     }
 }
 
 
-function map_words_to_html(L, lin, handler) {
-    var words = mapwords(lin);
-    var sentence = $('<span></span>');
-    for (var i = 0; i <= words.length; i++) {
-        var previous = words[i-1], word = words[i], next = words[i+1];
-        if (word == NOSPACING) continue;
-
-        if (!(previous == NOSPACING || PREFIXPUNCT.test(previous) || PUNCTUATION.test(word))) {
-            var path = (lin[i] || lin[i-1]).path;
-            var w = $('<span class="word space"></span>')
-                .data({'nr':i, 'L':L, 'path':path})
-                .html(' &nbsp; ')
-                .appendTo(sentence);
-            if (handler) {
-                w.addClass('clickable').click(BUSY(handler));
+function map_words_to_html(L, lin, bracketed_lin, handler) {
+    function bracket_html(n, brackets) {
+        var path = brackets[0];
+        var phrase = $('<span class="phrase"></span>')
+            .addClass(join(L, path))
+            .data({'path':path, 'start':n, 'lang':L});
+        for (var i = 1; i < brackets.length; i++) {
+            var tokn = brackets[i];
+            if (tokn instanceof Array) {
+                var subphrase = bracket_html(n, tokn)
+                    .appendTo(phrase);
+                n = subphrase.data('end');
+            } else if (tokn.word !== NOSPACING) {
+                var word = tokn.word;
+                if (n == 0) {
+                    word = word.charAt(0).toUpperCase() + word.slice(1);
+                }
+                var debugpath = $('<sub class="debug"></sub>').text(path)
+                    .toggle($('#debugging').prop('checked'));
+                var w = $('<span class="word"></span>')
+                    .data({'nr':tokn.n, 'L':L, 'path':path})
+                    .addClass(join("W"+L, path))
+                    .html(word)
+                    .append(debugpath)
+                    .appendTo(phrase);
+                if (handler) {
+                    w.addClass('clickable').click(BUSY(handler));
+                }
+                if (n !== tokn.n) console.log("ERROR:", n, tokn.n);
+                n = tokn.n + 1;
+            }
+            if (i < brackets.length-1) {
+                var previous = lin[n-1].word, current = lin[n].word;
+                if (!(previous == NOSPACING || current == NOSPACING || PREFIXPUNCT.test(previous) || PUNCTUATION.test(current))) {
+                    // SPACING
+                    $('<span class="space"></span>')
+                        .data({'nr':n, 'L':L, 'path':path})
+                        .html(' &nbsp; ')
+                        .appendTo(phrase);
+                }
             }
         }
-
-        if (word) {
-            var path = lin[i].path;
-            var w = $('<span class="word"></span>')
-                .data({'nr':i, 'L':L, 'path':path})
-                .html(word)
-                .appendTo(sentence);
-            if (handler) {
-                w.addClass('clickable').click(BUSY(handler));
-            }
-            $('<sub class="debug"></sub>')
-                .text(path)
-                .appendTo(sentence);
-        }
+        phrase.data('end', n);
+        return phrase;
     }
-    return sentence;
+    return bracket_html(0, bracketed_lin);
 }
 
 
+/*** THIS FUNCTION IS NOT UP-TO-DATE ***/
 function map_words_to_images(metadata, words, callback) {
     var sentence = $('<span></span>');
     var prefix, suffix;
@@ -289,108 +302,107 @@ function map_words_to_images(metadata, words, callback) {
 
 
 function clear_selection() {
-    $('.word').removeClass(HIGHLIGHTED).removeClass(STRIKED);
-    $('.span').children().unwrap();
+    $('.' + HIGHLIGHTED).removeClass(HIGHLIGHTED).removeData('span');
+    $('.' + STRIKED).removeClass(STRIKED);
     $('#menu').empty().hide();
     $('#mainmenu').hide();
 }
 
 
-function next_span(wordnr, span) {
-    if (!span) return [wordnr,wordnr];
+function next_span(wordnr, span, maxwidth) {
+    if (!span) return [wordnr, wordnr];
     var left = span[0], right = span[1];
-    var width = right - left;
-    if (right <= wordnr) {
+    if (left > 0 && right > wordnr) {
+        return [left-1, right-1];
+    } 
+    var width = right - left + 1;
+    if (width <= maxwidth) {
         left = wordnr;
-        right = left + width + 1;
-    } else {
-        left--; right--;
-    }
-    if (left < 0) {
-        return null;
-    } else {
-        return [left, right];
-    }
+        right = wordnr + width;
+        if (right >= maxwidth) {
+            right = maxwidth - 1;
+            left = right - width;
+        }
+        if (left >= 0) {
+            return [left, right];
+        }
+    } 
+    return null;
 }
 
 
 function click_word(clicked) {
+    var lang = clicked.data('L');
     var wordnr = clicked.data('nr');
-    var wordL = clicked.data('L');
     var wordpath = clicked.data('path');
-    // console.log(wordnr, wordL, wordpath);
-    if (wordL !== CurrentLanguage) {
-        CurrentLanguage = wordL;
-    }
-    if (!(CurrentPath && startswith(wordpath, CurrentPath))) {
-        CurrentPath = wordpath + "#";
-    }
-    if (!(CurrentSpan && CurrentSpan[0] <= wordnr && wordnr <= CurrentSpan[1])) {
-        CurrentSpan = next_span(wordnr);
+    var maxwidth = $('#' + join(lang,'sentence') + ' .word').length;
+
+    var span, highlighted;
+    if (clicked.hasClass(STRIKED)) {
+        highlighted = clicked.closest('.' + HIGHLIGHTED);
+    } 
+    if (highlighted && highlighted.length) {
+        span = highlighted.data('span');
+    } else {
+        highlighted = $('.' + join(lang, wordpath));
+        span = next_span(wordnr);
     }
 
     clear_selection();
-    while (true) {
-        if (!(CurrentPath && CurrentSpan)) {
-            CurrentPath = CurrentSpan = CurrentLanguage = null;
-            return;
+    var phrase = highlighted;
+    var menu;
+    while (!(menu && menu.length)) {
+        phrase = phrase.parent();
+        if (!phrase.hasClass('phrase')) {
+            phrase = highlighted;
+            span = next_span(wordnr, span, maxwidth);
+            if (!span) return;
         }
-        CurrentPath = CurrentPath.slice(0, CurrentPath.length-1);
-        var menu = CurrentMenus[CurrentLanguage][CurrentPath];
-        if (menu) menu = menu[hash(CurrentSpan)];
-        if (menu && menu.length > 0) break;
-        if (!CurrentPath) {
-            CurrentPath = wordpath + "#";
-            CurrentSpan = next_span(wordnr, CurrentSpan);
-        }
+        menu = phrase.data('menu');
+        if (menu) menu = menu[hash(span)];
     }
 
-    var selectedpaths = {};
-
-    $('#' + CurrentLanguage + ' .word')
-        .each(function() {
-            var nr = $(this).data('nr');
-            if (CurrentSpan[0] <= nr && nr <= CurrentSpan[1]) {
-                $(this).addClass(STRIKED);
-                var path = $(this).data('path')
-                selectedpaths[path] = true;
-            }
-        });
-
-    $('.highlighted').children().unwrap();
-    $('#' + join(CurrentLanguage,'sentence') + ' .word')
+    phrase.addClass(HIGHLIGHTED)
+        .data('span', span);
+    $('#' + join(lang,'sentence') + ' .word')
         .filter(function(){
             var nr = $(this).data('nr');
-            return CurrentSpan[0] <= nr && nr <= CurrentSpan[1];
+            return span[0] <= nr && nr <= span[1];
         })
-        .wrapAll('<span class="highlighted"></span>');
-
-
+        .addClass(STRIKED);
+    $('#' + join(lang,'sentence') + ' .space')
+        .filter(function(){
+            var nr = $(this).data('nr');
+            return span[0] < nr && nr <= span[1];
+        })
+        .addClass(STRIKED);
 
     for (var itemix = 0; itemix < menu.length; itemix++) {
         var item = menu[itemix];
         var menuitem = $('<span class="clickable">')
-            .data('tree', item.tree)
+            .data({'tree': item.tree, 'lang': lang})
             .click(BUSY(function(c){
-                select_tree(CurrentLanguage, c.data('tree'));
+                select_tree(c.data());
             }));
         if (item.lin.length == 0) {
-            menuitem.append($('<span>').html("&empty;"));
+            menuitem.append($('<span></span>').html("&empty;"));
         } else {
-            // var words = mapwords(item.lin);
-            map_words_and_spacing(null, CurrentLanguage, item.lin)
-                    .appendTo(menuitem);
-
+            var words = mapwords(item.lin).join(' ');
+            $('<span></span>').text(words)
+                .appendTo(menuitem);
         }
         $('<li>').append(menuitem).appendTo($('#menu'));
     }
-    var pos = clicked.offset();
-    var xadd = (clicked.outerWidth() - $('#menu').outerWidth()) / 2;
-    var yadd = clicked.outerHeight() * 3/4;
+
+    var top = clicked.offset().top + clicked.height() * 3/4;
+    var striked = $('.'+STRIKED);
+    var left = (striked.offset().left + striked.last().offset().left +
+                striked.last().width() - $('#menu').width()) / 2;
+    // var left = clicked.offset().top + (clicked.width() - $('#menu').width()) / 2;
     $('#menu').css({
-        'top': (pos.top + yadd) + 'px',
-        'left': (pos.left + xadd) + 'px',
-        'max-height': (window.innerHeight - pos.top - yadd*2) + 'px'
+        'top': top + 'px',
+        'left': left + 'px',
+        'max-height': (window.innerHeight - top - 6) + 'px'
     }).show();
 }
 
