@@ -1,34 +1,40 @@
 
+TSFILES = $(wildcard src/*.ts)
+
+.PHONY: all help clean grammar
+
+.DELETE_ON_ERROR:
+.SECONDARY:
+
+all: demo/js/muste-gui.js
+	rsync -a src/lib/*.js demo/js/
+
+help:
+	@echo "make all: compile everything"
+	@echo "make clean: remove generated files"
+	@echo "make grammar: build grammar from GF sources"
+
+demo/js/muste-gui.js: src/muste-gui.ts $(TSFILES) grammar
+	tsc --out $@ $<
+
+
+clean:
+	rm -f demo/js/* grammars/*.gfo src/generated/*
+
+
+GENDIR = src/generated
+
+grammar: $(GENDIR)/grammar.ts
+
 GFNAME = Grasp
 GFLANG = Eng Swe Ger
 
-INPUTDIR = grammars/grasp
-OUTPUTDIR = js/generated
+GFFILES = $(wildcard gf/*.gf)
+GFBASES = $(GFLANG:%=gf/$(GFNAME)%.gf)
+GFMAKE = gf --make --optimize-pgf --name grammar --output-dir $(GENDIR) --output-format
 
-.PHONY: help clean grammar metadata
+$(GENDIR)/grammar.ts: $(GENDIR)/grammar.js
+	cp $< $@
 
-help:
-	@echo "make clean: remove generated files"
-	@echo "make grammar: build grammar from GF sources"
-	@echo "make metadata: build metadata for Blissymbolics"
-
-clean: 
-	rm -f $(OUTPUTDIR)/*.* $(INPUTDIR)/*.gfo
-
-grammar: $(OUTPUTDIR)/grammar.js
-
-metadata: $(OUTPUTDIR)/bliss-metadata.js
-
-$(OUTPUTDIR)/bliss-metadata.js:
-	python tools/compile_metadata.py > $@
-
-GFFILES = $(wildcard $(INPUTDIR)/*.gf)
-GFBASES = $(GFLANG:%=$(INPUTDIR)/$(GFNAME)%.gf)
-GFMAKE = gf --make --optimize-pgf --name grammar --output-dir $(OUTPUTDIR) --output-format
-
-$(OUTPUTDIR)/grammar.js: $(GFFILES)
+$(GENDIR)/grammar.js: $(GFFILES)
 	$(GFMAKE) js $(GFBASES)
-
-$(OUTPUTDIR)/grammar.txt: $(GFFILES)
-	$(GFMAKE) pgf_pretty $(GFBASES)
-
