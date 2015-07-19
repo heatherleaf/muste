@@ -1,10 +1,15 @@
+///<reference path="GF.ts"/>
+///<reference path="generated/grammar.ts"/>
 
-var Grammar = Grasp;
+var Grammar : GFGrammar = Grasp;
 var Languages = ["GraspSwe", "GraspEng", "GraspGer"];
 var StartCat = 'Start';
 
-// var MapWordsToHTML = {'GraspZbl': map_words_to_images};
-// var Metadata = {'GraspZbl': BlissMetadata};
+var MapWordsToHTML = {};
+var Metadata = {};
+
+// MapWordsToHTML['GraspZbl'] = map_words_to_images;
+// Metadata['GraspZbl'] = BlissMetadata;
 
 var DefaultTree1 = parseGFTree(
     "(StartUtt (UttS (UseCl (Pres) (Neg) (PredVP (UsePron (she_Pron)) " + 
