@@ -152,6 +152,14 @@ input:checked + label {
     height: 5px;
 }
 
+.space.clickable:hover {
+    padding: 0 10px;
+}
+
+.word.clickable:hover {
+    padding: 0 5px;
+}
+
 .clickable:hover, button:hover, label:hover {
     cursor: pointer;
     background-color: #eee;
