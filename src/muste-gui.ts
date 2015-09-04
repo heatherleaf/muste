@@ -195,10 +195,8 @@ function set_and_show_tree(L : string, tree : GFTree) : void {
     $('#' + Utilities.join(L,'tree')).text(mapwords(abslin).join(" "));
 
     $('#' + L).data('tree', tree);
-    var menus : {[phrase:string] : {[span:string] : MenuItem[]}} = initialize_menus(lang, tree);
-    $('#' + L + ' .phrase').each(function(){
-        $(this).data('menu', menus[$(this).data('path')]);
-    });
+    var menus : {[span:string] : {[phrase:string] : MenuItem[]}} = initialize_menus(lang, tree);
+    $('#' + L).data('menus', menus);
 }
 
 
@@ -253,21 +251,21 @@ function map_words_to_html(
             if (i < brackets.tokens.length-1) {
                 var previous : string = lin[n-1].word;
                 var current : string = lin[n].word;
-                if (!(previous == NOSPACING || current == NOSPACING ||
-                      PREFIXPUNCT.test(previous) || PUNCTUATION.test(current)))
-                {
-                    // SPACING
-                    var debugpath : JQuery = $('<sub class="debug"></sub>').text(path)
-                        .toggle($('#debugging').prop('checked'));
-                    var s : JQuery = $('<span class="space"></span>')
-                        .data({'nr':n, 'L':L, 'path':path})
-                        .addClass(Utilities.join("S"+L, path))
-                        .html(' &nbsp; ')
-                        .append(debugpath)
-                        .appendTo(phrase);
-                    if (handler) {
-                        s.addClass('clickable').click(Utilities.BUSY(handler));
-                    }
+                // SPACING
+                var debugpath : JQuery = $('<sub class="debug"></sub>').text(path)
+                    .toggle($('#debugging').prop('checked'));
+                var s : JQuery = $('<span class="space"></span>')
+                    .data({'nr':n, 'L':L, 'path':path})
+                    .addClass(Utilities.join("S"+L, path))
+                    .append(debugpath)
+                    .appendTo(phrase);
+                if (previous == NOSPACING || current == NOSPACING || PREFIXPUNCT.test(previous) || PUNCTUATION.test(current)) {
+                    s.text(' ');
+                } else {
+                    s.html(' &nbsp; ');
+                }
+                if (handler) {
+                    s.addClass('clickable').click(Utilities.BUSY(handler));
                 }
             }
         }
@@ -356,52 +354,78 @@ function click_word(clicked0 : JQuery) : void {
     var wordpath : string = clicked.data('path');
     var maxwidth : number = $('#' + Utilities.join(lang,'sentence') + ' .word').length;
     var innermost_phrase : JQuery = $('.' + Utilities.join(lang, wordpath));
+    var span : [number, number];
+    var phrase : string;
 
-    var span : [number,number];
-    var phrase : JQuery;
     if (clicked.hasClass(STRIKED)) {
-        phrase = clicked.closest('.' + HIGHLIGHTED);
-        if (phrase.length) {
-            span = phrase.data('span');
+        var striked_nrs : any = <any> $('.' + STRIKED).map(function(ix,elem){
+            return $(elem).data('nr');
+        });
+        span = [Math.min.apply(null, striked_nrs), Math.max.apply(null, striked_nrs)];
+        if (isspace) {
+            if (span[0] == span[1]) {
+                span[1]--;
+            }
+        }
+        phrase = $(' .' + HIGHLIGHTED).data('path');
+    }
+
+    var all_menus : {[span:string] : {[phrase:string] : MenuItem[]}} = $('#' + lang).data('menus');
+    var menus : {[phrase:string] : MenuItem[]};
+    var menuphrases : string[];
+    var menu : MenuItem[];
+    
+    clear_selection();
+    if (span) {
+        isspace = span[0] > span[1];
+        menus = all_menus[span.join(":")];
+        menuphrases = Object.keys(menus).sort((x,y) => {
+            return y.length - x.length;
+        });
+        var n = 1;
+        while (menuphrases[n] && menuphrases[n-1] !== phrase) n++;
+        phrase = menuphrases[n];
+        if (phrase) {
+            menu = menus[phrase];
         }
     }
 
-    if (span) {
-        isspace = false;
-    } else {
-        phrase = innermost_phrase;
-        span = isspace ? [wordnr,wordnr-1] : next_span(wordnr);
-    }
-
-    clear_selection();
-    var menu : MenuItem[];
-    while (!(menu && menu.length)) {
-        phrase = phrase.parent();
-        if (!phrase.hasClass('phrase')) {
-            phrase = innermost_phrase;
+    if (!menu) {
+        if (span) {
+            menus = null;
+            if (isspace) return;
+        } else {
+            span = isspace ? [wordnr, wordnr-1] : next_span(wordnr);
+            menus = all_menus[span.join(":")];
+        }
+        while (!menus) {
             if (isspace) return;
             span = next_span(wordnr, span, maxwidth);
             if (!span) return;
+            menus = all_menus[span.join(":")];
         }
-        menu = phrase.data('menu');
-        if (menu) menu = menu[span.join(":")];
+        menuphrases = Object.keys(menus).sort((x,y) => {
+            return y.length - x.length;
+        });
+        phrase = menuphrases[0];
+        menu = menus[phrase];
     }
-    console.log('SPAN:', span[0] + '-' + span[1],
-                'PATH:', phrase.data('path'),
+
+    console.log('SPAN:', span,
+                'PATH:', phrase,
                 'MENU:', menu.length + ' items');
 
-    phrase.addClass(HIGHLIGHTED)
-        .data('span', span);
+    $('.' + Utilities.join(lang, phrase)).addClass(HIGHLIGHTED);
     if (isspace) {
         clicked.addClass(STRIKED);
     } else {
-        phrase.find('.word')
+        $('#' + lang).find('.word')
             .filter(function(){
                 var nr = $(this).data('nr');
                 return span[0] <= nr && nr <= span[1];
             })
             .addClass(STRIKED);
-        phrase.find('.space')
+        $('#' + lang).find('.space')
             .filter(function(){
                 var nr = $(this).data('nr');
                 return span[0] < nr && nr <= span[1];
@@ -427,9 +451,12 @@ function click_word(clicked0 : JQuery) : void {
     }
 
     var top : number = clicked.offset().top + clicked.height() * 3/4;
+    var left : number = clicked.offset().top + (clicked.width() - $('#menu').width()) / 2;
     var striked : JQuery = $('.'+STRIKED);
-    var left : number = (striked.offset().left + striked.last().offset().left +
-                         striked.last().width() - $('#menu').width()) / 2;
+    if (striked.length) {
+        left = (striked.offset().left + striked.last().offset().left +
+                striked.last().width() - $('#menu').width()) / 2;
+    }
     $('#menu').css({
         'top': top + 'px',
         'left': left + 'px',
