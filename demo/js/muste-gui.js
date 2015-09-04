@@ -614,18 +614,23 @@ var GFTree = (function () {
         }
         return size;
     };
-    GFTree.prototype.toString = function (focuspath, prefix, suffix) {
+    GFTree.prototype.toString = function (focuspath, prefix, suffix, maxdepth) {
         if (prefix == null)
             prefix = "*";
         if (suffix == null)
             suffix = prefix;
+        if (maxdepth !== null) {
+            if (maxdepth <= 0)
+                return "...";
+            maxdepth--;
+        }
         var result = (this.children.length == 0) ? this.node : "(" + this.node + " " + this.children.map(function (child, n) {
             if (child == null) {
                 return GFTree.GFMETA;
             }
             else {
                 var newpath = focuspath && focuspath[0] == n + "" ? focuspath.slice(1) : null;
-                return child.toString(newpath, prefix, suffix);
+                return child.toString(newpath, prefix, suffix, maxdepth);
             }
         }).join(" ") + ")";
         if (focuspath === "")
@@ -942,6 +947,17 @@ var BracketedLin = (function () {
         this.path = path;
         this.tokens = tokens;
     }
+    BracketedLin.prototype.toString = function (showpath) {
+        var tokstr = this.tokens.map(function (tok) {
+            return tok.toString(showpath);
+        }).join(" ");
+        if (showpath) {
+            return "[" + this.path + ": " + tokstr + "]";
+        }
+        else {
+            return "[" + tokstr + "]";
+        }
+    };
     return BracketedLin;
 })();
 var BracketedToken = (function () {
@@ -949,6 +965,9 @@ var BracketedToken = (function () {
         this.word = word;
         this.n = n;
     }
+    BracketedToken.prototype.toString = function (showpath) {
+        return this.word;
+    };
     return BracketedToken;
 })();
 function bracketise(lin) {
@@ -1127,7 +1146,6 @@ function initialize_menus(lang, tree) {
     for (var i = 0; i < all_phrase_paths.length; i++) {
         var phrase_path = all_phrase_paths[i];
         var ctr = 0;
-        final_menus[phrase_path] = {};
         var menus = all_menus[phrase_path];
         for (var ppspan in menus) {
             var menu = menus[ppspan];
@@ -1136,7 +1154,9 @@ function initialize_menus(lang, tree) {
                 var ma = menu[a], mb = menu[b];
                 return ma.cost - mb.cost || (ma.sright - ma.sleft) - (mb.sright - mb.sleft) || mapwords(ma.lin).join().localeCompare(mapwords(mb.lin).join());
             });
-            var menu_items = final_menus[phrase_path][ppspan] = [];
+            if (!final_menus[ppspan])
+                final_menus[ppspan] = {};
+            var menu_items = final_menus[ppspan][phrase_path] = [];
             for (var n = 0; n < slins.length; n++) {
                 var item = menu[slins[n]];
                 menu_items.push(item);
@@ -1360,7 +1380,6 @@ var DefaultTree2 = parseGFTree("(StartUtt (UttS (UseCl (Perf) (Pos) (PredVP (Use
 ///<reference path="muste.ts"/>
 ///<reference path="lib/jquery.d.ts"/>
 ///<reference path="muste-init.ts"/>
-// /<reference path="GF.ts"/>
 var ABSTRACT = 'Abstract';
 var CONCRETE = 'Concrete';
 var STRIKED = 'striked';
@@ -1513,10 +1532,7 @@ function set_and_show_tree(L, tree) {
     $('#' + Utilities.join(L, 'tree')).text(mapwords(abslin).join(" "));
     $('#' + L).data('tree', tree);
     var menus = initialize_menus(lang, tree);
-    $('#' + L + ' .phrase').each(function () {
-        // var data = $(this).data();
-        $(this).data('menu', menus[$(this).data('path')]);
-    });
+    $('#' + L).data('menus', menus);
 }
 function map_words_and_spacing(lang, L, lin, brackets, handler) {
     if (typeof MapWordsToHTML == "object" && lang in MapWordsToHTML) {
@@ -1555,13 +1571,17 @@ function map_words_to_html(L, lin, bracketed_lin, handler) {
             if (i < brackets.tokens.length - 1) {
                 var previous = lin[n - 1].word;
                 var current = lin[n].word;
-                if (!(previous == NOSPACING || current == NOSPACING || PREFIXPUNCT.test(previous) || PUNCTUATION.test(current))) {
-                    // SPACING
-                    var debugpath = $('<sub class="debug"></sub>').text(path).toggle($('#debugging').prop('checked'));
-                    var s = $('<span class="space"></span>').data({ 'nr': n, 'L': L, 'path': path }).addClass(Utilities.join("S" + L, path)).html(' &nbsp; ').append(debugpath).appendTo(phrase);
-                    if (handler) {
-                        s.addClass('clickable').click(Utilities.BUSY(handler));
-                    }
+                // SPACING
+                var debugpath = $('<sub class="debug"></sub>').text(path).toggle($('#debugging').prop('checked'));
+                var s = $('<span class="space"></span>').data({ 'nr': n, 'L': L, 'path': path }).addClass(Utilities.join("S" + L, path)).append(debugpath).appendTo(phrase);
+                if (previous == NOSPACING || current == NOSPACING || PREFIXPUNCT.test(previous) || PUNCTUATION.test(current)) {
+                    s.text(' ');
+                }
+                else {
+                    s.html(' &nbsp; ');
+                }
+                if (handler) {
+                    s.addClass('clickable').click(Utilities.BUSY(handler));
                 }
             }
         }
@@ -1642,45 +1662,71 @@ function click_word(clicked0) {
     var span;
     var phrase;
     if (clicked.hasClass(STRIKED)) {
-        phrase = clicked.closest('.' + HIGHLIGHTED);
-        if (phrase.length) {
-            span = phrase.data('span');
+        var striked_nrs = $('.' + STRIKED).map(function (ix, elem) {
+            return $(elem).data('nr');
+        });
+        span = [Math.min.apply(null, striked_nrs), Math.max.apply(null, striked_nrs)];
+        if (isspace) {
+            if (span[0] == span[1]) {
+                span[1]--;
+            }
+        }
+        phrase = $(' .' + HIGHLIGHTED).data('path');
+    }
+    var all_menus = $('#' + lang).data('menus');
+    var menus;
+    var menuphrases;
+    var menu;
+    clear_selection();
+    if (span) {
+        isspace = span[0] > span[1];
+        menus = all_menus[span.join(":")];
+        menuphrases = Object.keys(menus).sort(function (x, y) {
+            return y.length - x.length;
+        });
+        var n = 1;
+        while (menuphrases[n] && menuphrases[n - 1] !== phrase)
+            n++;
+        phrase = menuphrases[n];
+        if (phrase) {
+            menu = menus[phrase];
         }
     }
-    if (span) {
-        isspace = false;
-    }
-    else {
-        phrase = innermost_phrase;
-        span = isspace ? [wordnr, wordnr - 1] : next_span(wordnr);
-    }
-    clear_selection();
-    var menu;
-    while (!(menu && menu.length)) {
-        phrase = phrase.parent();
-        if (!phrase.hasClass('phrase')) {
-            phrase = innermost_phrase;
+    if (!menu) {
+        if (span) {
+            menus = null;
+            if (isspace)
+                return;
+        }
+        else {
+            span = isspace ? [wordnr, wordnr - 1] : next_span(wordnr);
+            menus = all_menus[span.join(":")];
+        }
+        while (!menus) {
             if (isspace)
                 return;
             span = next_span(wordnr, span, maxwidth);
             if (!span)
                 return;
+            menus = all_menus[span.join(":")];
         }
-        menu = phrase.data('menu');
-        if (menu)
-            menu = menu[span.join(":")];
+        menuphrases = Object.keys(menus).sort(function (x, y) {
+            return y.length - x.length;
+        });
+        phrase = menuphrases[0];
+        menu = menus[phrase];
     }
-    console.log('SPAN:', span[0] + '-' + span[1], 'PATH:', phrase.data('path'), 'MENU:', menu.length + ' items');
-    phrase.addClass(HIGHLIGHTED).data('span', span);
+    console.log('SPAN:', span, 'PATH:', phrase, 'MENU:', menu.length + ' items');
+    $('.' + Utilities.join(lang, phrase)).addClass(HIGHLIGHTED);
     if (isspace) {
         clicked.addClass(STRIKED);
     }
     else {
-        phrase.find('.word').filter(function () {
+        $('#' + lang).find('.word').filter(function () {
             var nr = $(this).data('nr');
             return span[0] <= nr && nr <= span[1];
         }).addClass(STRIKED);
-        phrase.find('.space').filter(function () {
+        $('#' + lang).find('.space').filter(function () {
             var nr = $(this).data('nr');
             return span[0] < nr && nr <= span[1];
         }).addClass(STRIKED);
@@ -1697,15 +1743,14 @@ function click_word(clicked0) {
             var words = mapwords(item.lin).join(' ');
             $('<span></span>').text(words).appendTo(menuitem);
         }
-        // menuitem.append($('<small></small>').html(
-        //     '&nbsp;' + item.pleft + "(" + item.sleft + "-" + item.sright + ")" + item.pright
-        // ));
         $('<li>').append(menuitem).appendTo($('#menu'));
     }
     var top = clicked.offset().top + clicked.height() * 3 / 4;
+    var left = clicked.offset().top + (clicked.width() - $('#menu').width()) / 2;
     var striked = $('.' + STRIKED);
-    var left = (striked.offset().left + striked.last().offset().left + striked.last().width() - $('#menu').width()) / 2;
-    // var left = clicked.offset().top + (clicked.width() - $('#menu').width()) / 2;
+    if (striked.length) {
+        left = (striked.offset().left + striked.last().offset().left + striked.last().width() - $('#menu').width()) / 2;
+    }
     $('#menu').css({
         'top': top + 'px',
         'left': left + 'px',
