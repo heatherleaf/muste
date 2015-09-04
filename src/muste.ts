@@ -53,10 +53,25 @@ class BracketedLin {
     constructor(public path : string,
                 public tokens : (BracketedLin | BracketedToken)[]
                ) {}
+
+    public toString(showpath? : boolean) : string {
+        var tokstr : string = this.tokens.map((tok) => {
+            return tok.toString(showpath);
+        }).join(" ");
+        if (showpath) {
+            return "[" + this.path + ": " + tokstr + "]";
+        } else {
+            return "[" + tokstr + "]";
+        }
+    }
 }
 
 class BracketedToken {
     constructor(public word:string, public n:number) {}
+
+    public toString(showpath? : boolean) : string {
+        return this.word;
+    }
 }
 
 function bracketise(lin : LinToken[]) : BracketedLin {
