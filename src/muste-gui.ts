@@ -3,8 +3,6 @@
 ///<reference path="lib/jquery.d.ts"/>
 ///<reference path="muste-init.ts"/>
 
-// /<reference path="GF.ts"/>
-
 
 var ABSTRACT = 'Abstract';
 var CONCRETE = 'Concrete';
@@ -199,7 +197,6 @@ function set_and_show_tree(L : string, tree : GFTree) : void {
     $('#' + L).data('tree', tree);
     var menus : {[phrase:string] : {[span:string] : MenuItem[]}} = initialize_menus(lang, tree);
     $('#' + L + ' .phrase').each(function(){
-        // var data = $(this).data();
         $(this).data('menu', menus[$(this).data('path')]);
     });
 }
@@ -388,7 +385,6 @@ function click_word(clicked0 : JQuery) : void {
         }
         menu = phrase.data('menu');
         if (menu) menu = menu[span.join(":")];
-        // if (menu) menu = menu[Utilities.hash(span)];
     }
     console.log('SPAN:', span[0] + '-' + span[1],
                 'PATH:', phrase.data('path'),
@@ -427,9 +423,6 @@ function click_word(clicked0 : JQuery) : void {
             $('<span></span>').text(words)
                 .appendTo(menuitem);
         }
-        // menuitem.append($('<small></small>').html(
-        //     '&nbsp;' + item.pleft + "(" + item.sleft + "-" + item.sright + ")" + item.pright
-        // ));
         $('<li>').append(menuitem).appendTo($('#menu'));
     }
 
@@ -437,7 +430,6 @@ function click_word(clicked0 : JQuery) : void {
     var striked : JQuery = $('.'+STRIKED);
     var left : number = (striked.offset().left + striked.last().offset().left +
                          striked.last().width() - $('#menu').width()) / 2;
-    // var left = clicked.offset().top + (clicked.width() - $('#menu').width()) / 2;
     $('#menu').css({
         'top': top + 'px',
         'left': left + 'px',
