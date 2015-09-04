@@ -439,16 +439,20 @@ class GFTree {
         return size;
     }
 
-    public toString(focuspath? : string, prefix? : string, suffix? : string) : string {
+    public toString(focuspath? : string, prefix? : string, suffix? : string, maxdepth? : number) : string {
         if (prefix == null) prefix = "*";
         if (suffix == null) suffix = prefix;
+        if (maxdepth !== null) {
+            if (maxdepth <= 0) return "...";
+            maxdepth--;
+        }
         var result = (this.children.length == 0) ? this.node :
             "(" + this.node + " " + this.children.map((child, n) => {
                 if (child == null) {
                     return GFTree.GFMETA;
                 } else {
                     var newpath = focuspath && focuspath[0] == n+"" ? focuspath.slice(1) : null;
-                    return child.toString(newpath, prefix, suffix);
+                    return child.toString(newpath, prefix, suffix, maxdepth);
                 }
             }).join(" ") + ")";
         if (focuspath === "") 
