@@ -144,10 +144,10 @@ function equal_phrases(
 
 function initialize_menus(
     lang : string, tree : GFTree
-) : {[phrase:string] : {[span:string] : MenuItem[]}}
+) : {[span:string] : {[phrase:string] : MenuItem[]}}
 {
     Utilities.START_TIMER(lang, true);
-    var final_menus : {[phrase:string] : {[span:string] : MenuItem[]}} = {};
+    var final_menus : {[span:string] : {[phrase:string] : MenuItem[]}} = {};
     var lin : LinToken[] = Linearise(lang, tree);
     var all_phrase_paths_D : {[path:string] : boolean} = {};
     for (var i = 0; i < lin.length; i++) {
@@ -224,7 +224,6 @@ function initialize_menus(
                     var pright : number = phrase_right;
                     var sleft : number = restrict_left(simlin, phrase_path);
                     var sright : number = restrict_right(simlin, phrase_path);
-                    // TODO: use <= instead of < to get insertion menus!
                     while (pleft <= pright && sleft <= sright && lin[pleft].word == simlin[sleft].word) {
                         pleft++; sleft++;
                     }
@@ -258,7 +257,6 @@ function initialize_menus(
     for (var i = 0; i < all_phrase_paths.length; i++) {
         var phrase_path = all_phrase_paths[i];
         var ctr = 0;
-        final_menus[phrase_path] = {};
         var menus = all_menus[phrase_path];
         for (var ppspan in menus) {
             var menu = menus[ppspan];
@@ -268,7 +266,8 @@ function initialize_menus(
                 return ma.cost - mb.cost || (ma.sright-ma.sleft) - (mb.sright-mb.sleft) || 
                     mapwords(ma.lin).join().localeCompare(mapwords(mb.lin).join());
             });
-            var menu_items : MenuItem[] = final_menus[phrase_path][ppspan] = [];
+            if (!final_menus[ppspan]) final_menus[ppspan] = {};
+            var menu_items : MenuItem[] = final_menus[ppspan][phrase_path] = [];
             for (var n = 0; n < slins.length; n ++) {
                 var item = menu[slins[n]];
                 menu_items.push(item);
