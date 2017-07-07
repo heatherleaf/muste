@@ -1,0 +1,8 @@
+
+echo
+echo "+--------------------------------------------------------------------+"
+echo "|  http://localhost:8000/cgi-bin/server-simulation.py (or whatever)  |"
+echo "+--------------------------------------------------------------------+"
+echo
+
+python3 -m http.server --cgi 8000
