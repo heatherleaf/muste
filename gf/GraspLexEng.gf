@@ -29,7 +29,7 @@ concrete GraspLexEng of GraspLex = GraspCatEng, LexiconEng [
     -- youSg_Pron, youPl_Pron, 
     i_Pron, he_Pron, she_Pron, we_Pron, they_Pron
 
-] ** open (L=LexiconEng), (P=ParadigmsEng) in {
+] ** open (L=LexiconEng), (P=ParadigmsEng), (Pre=Prelude) in {
 
 lincat Adverb = Adv ;
 
@@ -41,7 +41,7 @@ lin
   sweden_PN = P.regGenPN "Sweden" P.nonhuman ;
   london_PN = P.regGenPN "London" P.nonhuman ;
   britain_PN = P.regGenPN "Britain" P.nonhuman ;
-  berlin_PN = P.regGenPN "Berlin" P.nonhuman ;
+  berlin_PN = P.regGenPN Pre.nonExist P.nonhuman ;
   germany_PN = P.regGenPN "Germany" P.nonhuman ;
 
   here_Adverb = here_Adv ;

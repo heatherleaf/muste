@@ -514,7 +514,7 @@ function linearise_abstract(tree : GFTree) : LinToken[] {
         if (tree instanceof Array) {
             lin.push({'word':"(", 'path':path});
             for (var i in tree) {
-                lintree_(tree[i], i>0 ? path+i : path);
+                lintree_(tree[i], path); // i>0 ? path+i : path);
             }
             lin.push({'word':")", 'path':path});
         } else {

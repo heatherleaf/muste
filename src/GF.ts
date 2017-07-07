@@ -237,6 +237,9 @@ class GFConcrete {
             for (var i = lin.length-1; i >= 0; i--) {
                 var path : string = lin[i].path;
                 var arg = lin[i].arg;
+                if (arg instanceof SymNE) {
+                    arg = new SymKS("-NONEXIST-");
+                }
                 if (arg instanceof SymKS) {
                     for (var j = (<SymKS>arg).tokens.length-1; j >= 0; j--) {
                         newlin.push({'word':(<SymKS>arg).tokens[j], 'path':path});
@@ -283,6 +286,7 @@ class GFConcrete {
                 var children = allchildren[childrenix];
                 var allfcs = linfuns[children.cats.join()];
                 if (allfcs && allfcs.length > 0) {
+                    // resultloop:
                     for (var fcsix = 0; fcsix < allfcs.length; fcsix++) {
                         var fcs = allfcs[fcsix];
                         var lin = [];
@@ -299,7 +303,9 @@ class GFConcrete {
                                         var token = alltokens[tokix];
                                         phrase.push(token);
                                     }
-                                } else {
+                                // } else if (arg instanceof SymNE) {
+                                //     break resultloop;
+                                } else  {
                                     phrase.push({'arg':arg, 'path':path});
                                 }
                             }
@@ -744,6 +750,10 @@ class SymKS implements Symbol {
     constructor(...tokens : string[]) {
         this.tokens = tokens;
     }
+}
+
+class SymNE implements Symbol {
+    constructor() {}
 }
 
 class SymKP implements Symbol {
