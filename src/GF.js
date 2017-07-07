@@ -1,8 +1,8 @@
-///<reference path="Utilities.ts"/>
 /*
    GF.js, by Peter Ljunglöf
    This file must be loaded BEFORE the GF grammar is loaded!
 */
+
 var GFGrammar = (function () {
     function GFGrammar(abs, cncs) {
         this.abs = abs;
@@ -21,6 +21,7 @@ var GFGrammar = (function () {
     };
     return GFGrammar;
 }());
+
 var GFAbstract = (function () {
     function GFAbstract(startcat, types) {
         this.startcat = startcat;
@@ -36,7 +37,7 @@ var GFAbstract = (function () {
         this.typing2funs = {};
         for (var fun in types) {
             var typ = types[fun].abscat;
-            var hashargs = Utilities.hash(types[fun].children);
+            var hashargs = JSON.stringify(types[fun].children)
             if (!this.typing2funs[typ])
                 this.typing2funs[typ] = {};
             if (!this.typing2funs[typ][hashargs])
@@ -113,6 +114,7 @@ var GFAbstract = (function () {
     };
     return GFAbstract;
 }());
+
 var GFConcrete = (function () {
     function GFConcrete(flags, productions, functions, sequences, categories, nr_cats) {
         this.abs = undefined;
@@ -344,6 +346,7 @@ var GFConcrete = (function () {
     @param prefix, suffix: the string that should be used for highlighting
     @return: a String
 **/
+
 function strLin(lin, showpath, focus, prefix, suffix) {
     if (prefix == null)
         prefix = "*";
@@ -365,6 +368,7 @@ function strLin(lin, showpath, focus, prefix, suffix) {
     @param children: an Array of GFTree's
     @return: a new object
 **/
+
 var GFTree = (function () {
     function GFTree(node, children) {
         this.node = node;
@@ -532,6 +536,7 @@ GFTree.GFMETA = "?";
     @param descr: a string representing the tree
     @return: a new GFTree
 **/
+
 function parseGFTree(descr) {
     return parseFocusedGFTree(descr).tree;
 }
@@ -539,9 +544,11 @@ function parseGFTree(descr) {
     @param descr: a string representing the tree
     @return: a record {tree: a new GFTree, focus: a focus node}
 **/
+
 function parseFocusedGFTree(descr) {
     var tokens = descr
-        .replace(/(\*?)\( */g, " $1(")
+        .replace(/\( */g, " (")
+        .replace(/\* +\(/g, " *(")
         .replace(/\)/g, " ) ")
         .replace(/^ +| +$/g, "")
         .split(/ +/);
@@ -603,6 +610,7 @@ function parseFocusedGFTree(descr) {
     @param defval: the default value to set, if key doesn't have a value already
     @return: the result of looking up key in dict
 **/
+
 function setdefault(dict, key, defval) {
     if (dict[key] == null)
         dict[key] = defval;
@@ -612,6 +620,7 @@ function setdefault(dict, key, defval) {
     @param string, prefix: Strings
     @return: True if string starts with prefix
 **/
+
 function startswith(str, prefix) {
     if (typeof str == "string" && typeof prefix == "string")
         return str.slice(0, prefix.length) == prefix;
@@ -619,9 +628,11 @@ function startswith(str, prefix) {
 //////////////////////////////////////////////////////////////////////
 // functions for creating GF grammars from auto-generated javascript
 // DO NOT RELY ON THESE - they might change whenever GF's output format changes
+
 function mkFun(i) { return "F" + i; }
 function mkCat(i) { return "C" + i; }
 function mkSeq(i) { return "S" + i; }
+
 var Type = (function () {
     function Type(children, abscat) {
         this.children = children;
@@ -629,6 +640,7 @@ var Type = (function () {
     }
     return Type;
 }());
+
 var Apply = (function () {
     function Apply(fun, children) {
         this.children = children;
@@ -636,18 +648,21 @@ var Apply = (function () {
     }
     return Apply;
 }());
+
 var Coerce = (function () {
     function Coerce(cat) {
         this.cat = mkCat(cat);
     }
     return Coerce;
 }());
+
 var PArg = (function () {
     function PArg(cat) {
         this.parg = mkCat(cat);
     }
     return PArg;
 }());
+
 var CncFun = (function () {
     function CncFun(absfun, seqs) {
         this.absfun = absfun;
@@ -657,6 +672,7 @@ var CncFun = (function () {
     }
     return CncFun;
 }());
+
 var SymLit = (function () {
     function SymLit(arg, param) {
         this.arg = arg;
@@ -664,6 +680,7 @@ var SymLit = (function () {
     }
     return SymLit;
 }());
+
 var SymCat = (function () {
     function SymCat(arg, param) {
         this.arg = arg;
@@ -671,6 +688,7 @@ var SymCat = (function () {
     }
     return SymCat;
 }());
+
 var SymKS = (function () {
     function SymKS() {
         var tokens = [];
@@ -681,11 +699,13 @@ var SymKS = (function () {
     }
     return SymKS;
 }());
+
 var SymNE = (function () {
     function SymNE() {
     }
     return SymNE;
 }());
+
 var SymKP = (function () {
     function SymKP(tokens, alts) {
         this.tokens = tokens;
@@ -693,6 +713,7 @@ var SymKP = (function () {
     }
     return SymKP;
 }());
+
 var Alt = (function () {
     function Alt(tokens, follows) {
         this.tokens = tokens;
