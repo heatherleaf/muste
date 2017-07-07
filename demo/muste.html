@@ -7,6 +7,19 @@
   <link rel="stylesheet" href="muste.css" type="text/css"></link>
   <script type="text/javascript" src="jquery-1.11.1.min.js"></script>
   <script type="text/javascript" src="muste-gui.js"></script>
+  <script>
+    var SERVER = "http://localhost:8000/cgi-bin/server-simulation.py"
+  </script>
+
+  <!-- Comment this out if you want to run on the server: -->
+  <script type="text/javascript" src="cgi-simulation/GF.js"></script>
+  <script type="text/javascript" src="cgi-simulation/grammar.js"></script>
+  <script type="text/javascript" src="cgi-simulation/muste-backend.js"></script>
+  <script>
+    var SERVER = server_simulation;
+    initialize_simulation();
+  </script>
+  <!-- -->
 </head>
 
 <body>
@@ -16,40 +29,13 @@
   <span id="busy-indicator" class="idle"></span>
   <!-- Unicode Character 'BLACK CIRCLE' (U+25CF) -->
 
-  <button type="button" id="mainmenu-toggler" class="prevent-body-click">&#x2630;</button>
-  <!-- U+2630 // TRIGRAM FOR HEAVEN -->
-
-  <ul id="mainmenu">
-    <li><button type="button" id="restart-button">Restart</button>
-      <!-- U+25EF // LARGE CIRCLE -->
-      <!-- U+27F2 // ANTICLOCKWISE GAPPED CIRCLE ARROW (doesn't show on iPad) -->
-    <li id="L1-menu">
-    <li id="L2-menu">
-    <li>
-      <input type="checkbox" id="connected">
-      <label for="connected">Connected</label>
-      <input type="checkbox" id="debugging">
-      <label for="debugging">Debug</label>
-  </ul>
-
   <div id="container">
-    <div id="L1">
-      <div class="sentence-line">
-        <span id="L1-sentence" class="prevent-body-click"></span>
-      </div>
-      <div id="vertical-separator">
-        <div id="L1-tree" class="debug"></div>
-      </div>
-    </div>
-    <div id="L2">
-      <div class="sentence-line">
-        <span id="L2-sentence" class="prevent-body-click"></span>
-      </div>
-      <div id="L2-tree" class="debug"></div>
-    </div>
+    <div id="A" class="sentence prevent-body-click"></div>
+    <div class="vertical-separator"></div>
+    <div id="B"class="sentence prevent-body-click"></div>
   </div>
 
-  <ul id="menu" class="prevent-body-click"></ul>
+  <div id="menus" class="prevent-body-click"></div>
 
 </div>
 </body>
