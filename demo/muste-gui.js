@@ -80,7 +80,8 @@ function restart_game() {
 Note: the first time the game is started, the input should be 'null'
 */
 
-function call_server(input) {
+    function call_server(input) {
+	console.log("Calling server with " + input);
     if (typeof(SERVER) === "function") {
         handle_server_result(SERVER(input));
     }
@@ -120,6 +121,7 @@ Note: the 'grammar' and the 'tree' should be exactly the same as the ones that t
 */
 
 function handle_server_result(data) {
+    console.log("data", data);
     console.log("score", data.score);
     set_score(data.score);
     set_data('A', data.A);
