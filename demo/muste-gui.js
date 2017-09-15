@@ -61,7 +61,14 @@ function confirm_restart_game() {
 
 
 function restart_game() {
-    call_server();
+    call_server({
+        score: 0,
+        a: {grammar: DefaultLang1,
+            tree: DefaultTree1,
+           },
+        b: {grammar: DefaultLang2,
+            tree: DefaultTree2,
+           }});
 }
 
 /* The 'input' from the client to the server should be of this form:
