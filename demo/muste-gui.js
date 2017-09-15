@@ -278,9 +278,9 @@ function click_word(event) {
     }
     else {
         var selection =
-            clicked.hasClass('striked') ? next_selection(wordnr, get_selection(), maxwidth) 
+            (clicked.hasClass('striked') ? next_selection(wordnr, get_selection(), maxwidth) 
             : clicked.hasClass('word') ? next_selection(wordnr, null, maxwidth)
-            : [wordnr, wordnr];
+            : [wordnr, wordnr]).toString();
         clear_selection();
         var menus = get_data(lang).menu[selection];
         console.log("MENU["+selection+"]", menus);
