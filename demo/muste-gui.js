@@ -92,7 +92,9 @@ Note: the first time the game is started, the input should be 'null'
             timeout: AjaxTimeout,
             url: SERVER, 
             dataType: "json",
-            data: input
+	    method: "POST",
+	    processData: false,
+            data: JSON.stringify(input)
         }).fail(function(jqxhr, status, error) {
             alert_error(status, error);
         }).done(handle_server_result);
@@ -124,10 +126,10 @@ function handle_server_result(data) {
     console.log("data", data);
     console.log("score", data.score);
     set_score(data.score);
-    set_data('A', data.A);
-    set_data('B', data.B);
-    show_lin('A', data.A.lin);
-    show_lin('B', data.B.lin);
+    set_data('A', data.a);
+    set_data('B', data.b);
+    show_lin('A', data.a.lin);
+    show_lin('B', data.b.lin);
     // mark_correct_phrases();
     if (data.success) {
         setTimeout(function(){
@@ -164,10 +166,10 @@ function select_tree(data) {
     var B = get_data('B');
     call_server({
         score: get_score(),
-        A: {grammar: A.grammar,
+        a: {grammar: A.grammar,
             tree: data.lang == "A" ? data.tree : A.tree,
            },
-        B: {grammar: B.grammar,
+        b: {grammar: B.grammar,
             tree: data.lang == "B" ? data.tree : B.tree,
            },
     });
